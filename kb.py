@@ -27,3 +27,16 @@ def all_groups_kb(groups: dict):
     return InlineKeyboardMarkup(
         inline_keyboard=kb_list
     )
+
+
+def schedule_kb():
+    kb_list = [
+        [KeyboardButton(text="Расписание на сегодня")],
+        [KeyboardButton(text="Покинуть группу")]
+    ]
+
+    return ReplyKeyboardMarkup(
+        keyboard=kb_list,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )

@@ -1,9 +1,8 @@
 import logging
 import os
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher
 import asyncio
-import aiohttp
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -14,8 +13,6 @@ from handlers import router
 
 
 async def main():
-    logger = logging.getLogger(__name__)
-
     load_dotenv()
 
     bot = Bot(token=os.getenv("BOT_TOKEN"), default=DefaultBotProperties(parse_mode=ParseMode.HTML))

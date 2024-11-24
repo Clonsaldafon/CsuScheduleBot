@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from encodings.utf_8 import decode
 
 from redis import Redis, StrictRedis
@@ -12,7 +13,7 @@ from aiogram.types import Message, InlineKeyboardButton, ReplyKeyboardMarkup, Ke
 from aiohttp import ClientSession
 from requests import session
 
-from kb import groups_kb, all_groups_kb
+from kb import groups_kb, all_groups_kb, schedule_kb
 
 router = Router()
 
@@ -158,5 +159,43 @@ async def group_join_handler(msg: Message, state: FSMContext):
 
         print(response_json)
 
-        await msg.answer(text="Welcome!")
+        redis_client.set(
+            name=f"group_id:{msg.from_user.id}",
+            value=f"{state_data.get("id")}"
+        )
+        await msg.answer(text="Welcome!", reply_markup=schedule_kb())
+        await state.clear()
+
+
+@router.message(F.text == "Расписание на сегодня")
+async def today_schedule_handler(msg: Message):
+    async with ClientSession() as session:
+        redis_token = decode(redis_client.get(f"tg_id:{msg.from_user.id}"))
+        redis_group_id = decode(redis_client.get(f"group_id:{msg.from_user.id}"))
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {redis_token[0]}"
+        }
+
+        response_json = await get_data(session, f"{BASE_URL}/v1/api/groups/{redis_group_id[0]}/schedule", headers)
+        print(response_json)
+
+        is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
+        day_of_week = datetime.today().weekday() + 1
+        answer = ""
+        for subject in response_json:
+            if subject["is_even"] == is_even:
+                if subject["day_of_week"] == day_of_week:
+                    start_time = ":".join(str(subject["start_time"]).split(":")[:-1])
+                    end_time = ":".join(str(subject["end_time"]).split(":")[:-1])
+
+                    answer += f"{subject["subject_name"]}\n"
+                    answer += f"{subject["type"]}\n"
+                    answer += f"{subject["teacher"]}\n"
+                    answer += f"ауд. {subject["room"]}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
+                    answer += f"{start_time} - {end_time}\n"
+                    answer += "\n"
+
+        await msg.answer(text=answer)
 
