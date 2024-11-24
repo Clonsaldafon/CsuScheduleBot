@@ -1,12 +1,10 @@
-from tokenize import group
-
 from aiogram.types import InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup
 
 
 def auth_kb():
     kb_list = [
-        [InlineKeyboardButton(text="Войти", callback_data="login")],
-        [InlineKeyboardButton(text="Создать аккаунт", callback_data="signup")]
+        [InlineKeyboardButton(text="Создать аккаунт", callback_data="signup")],
+        [InlineKeyboardButton(text="Войти", callback_data="login")]
     ]
 
     return InlineKeyboardMarkup(
@@ -16,7 +14,7 @@ def auth_kb():
 
 def to_start_kb():
     kb_list = [
-        [KeyboardButton(text="В начало")]
+        [KeyboardButton(text="В начало 🔙")]
     ]
 
     return ReplyKeyboardMarkup(
@@ -56,9 +54,9 @@ def all_groups_kb(groups: dict):
 
 def schedule_kb():
     kb_list = [
-        [KeyboardButton(text="Расписание на сегодня")],
-        [KeyboardButton(text="Моя группа")],
-        [KeyboardButton(text="Покинуть группу")]
+        [KeyboardButton(text="Расписание на сегодня 🗓")],
+        [KeyboardButton(text="Моя группа 🫂")],
+        [KeyboardButton(text="Покинуть группу ❌")]
     ]
 
     return ReplyKeyboardMarkup(

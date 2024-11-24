@@ -1,3 +1,5 @@
+import emoji
+
 from datetime import datetime
 
 from aiogram import Router, F
@@ -6,7 +8,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiohttp import ClientSession
-from pydantic.v1 import NoneIsAllowedError
 
 from kb import groups_kb, all_groups_kb, schedule_kb, auth_kb, to_start_kb
 from db import redis_client
@@ -40,7 +41,8 @@ class GroupStates(StatesGroup):
 @router.message(Command("start"))
 async def start_handler(msg: Message):
     await msg.answer(
-        text="Зарегистрируйтесь или войдите в аккаунт",
+        text="Привет 👋\n" +
+             "Давай знакомиться, для этого создай новый аккаунт либо войди в существующий ⤵",
         reply_markup=auth_kb()
     )
 
@@ -54,26 +56,28 @@ async def auth_handler(call: CallbackQuery, state: FSMContext):
     match data:
         case "login":
             await call.message.answer(
-                text="Введите Email",
+                text="Хм... Я тебя не помню 🤔\n" +
+                     "Напиши свой email 📧",
                 reply_markup=to_start_kb()
             )
 
             await state.set_state(AuthorizationStates.email)
         case "signup":
             await call.message.answer(
-                text="Чтобы начать пользоваться ботом, вам нужно заполнить свои данные.\n" +
-                     "Для начала введите адрес электронной почты",
+                text="Я рад, что смог заинтересовать тебя 🤗\n" +
+                     "Заполнишь небольшую анкету? Это займет немного времени ⏰\n" +
+                     "Но зато я тебя запомню, для начала напиши свой email 📧",
                 reply_markup=to_start_kb()
             )
 
             await state.set_state(RegistrationStates.email)
 
 
-@router.message(F.text == "В начало")
+@router.message(F.text == "В начало 🔙")
 async def to_start_handler(msg: Message, state: FSMContext):
     await state.clear()
     await msg.answer(
-        text="Зарегистрируйтесь или войдите в аккаунт",
+        text="Создай новый аккаунт либо войди в существующий ⤵",
         reply_markup=auth_kb()
     )
 
@@ -82,7 +86,8 @@ async def to_start_handler(msg: Message, state: FSMContext):
 async def capture_email_auth(msg: Message, state: FSMContext):
     await state.update_data(email=msg.text)
     await msg.answer(
-        text="Введите пароль",
+        text="Как-будто что-то знакомое... 🤔\n" +
+             "А какой пароль? 🔒",
         reply_markup=to_start_kb()
     )
     await state.set_state(AuthorizationStates.password)
@@ -114,7 +119,6 @@ async def capture_password_auth(msg: Message, state: FSMContext):
             print(response)
 
             if "access_token" in response:
-
                 await redis_client.set(
                     name=f"tg_id:{msg.from_user.id}",
                     value=str(response["access_token"])
@@ -124,41 +128,43 @@ async def capture_password_auth(msg: Message, state: FSMContext):
                 is_group_id_exists = await redis_client.exists(f"group_id:{msg.from_user.id}")
                 if is_group_id_exists:
                     await msg.answer(
-                        text="Вы вошли в систему!",
+                        text="Теперь вспомнил 🤪\n" +
+                             "Как же я мог тебя забыть 🤦‍♂️",
                         reply_markup=schedule_kb()
                     )
                 else:
                     await msg.answer(
-                        text="Вы вошли в систему!",
+                        text="Теперь вспомнил 🤪\n" +
+                             "Как же я мог тебя забыть 🤦‍♂️",
                         reply_markup=groups_kb()
                     )
             else:
                 match response["error"]:
                     case "user not found":
                         await msg.answer(
-                            text="Пользователь с таким Email еще не зарегистрирован.\n" +
-                                 "Попробуйте использовать другой адрес",
+                            text="Никак не могу вспомнить человека с таким email 😔\n" +
+                                 "Попробуй использовать другой адрес",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(AuthorizationStates.email)
                     case "Key: 'LogInRequest.Email' Error:Field validation for 'Email' failed on the 'email' tag":
                         await msg.answer(
-                            text="Неверный формат Email.\n" +
-                                 "Попробуйте использовать другой адрес",
+                            text="Неверный формат email 🧐\n" +
+                                 "Попробуй еще раз",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(AuthorizationStates.email)
                     case "wrong password":
                         await msg.answer(
-                            text="Неверный пароль.\n" +
-                                 "Попробуйте ввести еще раз",
+                            text="Неверный пароль 🔒\n" +
+                                 "Попробуй ввести его еще раз",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(AuthorizationStates.password)
                     case _:
                         await msg.answer(
-                            text="Неверный формат данных.\n" +
-                                 "Попробуйте ввести почту еще раз",
+                            text="Похоже, что-то пошло не по плану... 🫣\n" +
+                                 "Попробуй ввести email еще раз ✍",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(AuthorizationStates.email)
@@ -171,7 +177,7 @@ async def capture_password_auth(msg: Message, state: FSMContext):
 async def capture_email(msg: Message, state: FSMContext):
     await state.update_data(email=msg.text)
     await msg.answer(
-        text="Ппридумайте пароль для доступа к сервису",
+        text="Придумай сложный пароль (не менее 8 символов) 🔒",
         reply_markup=to_start_kb()
     )
     await state.set_state(RegistrationStates.password)
@@ -179,13 +185,23 @@ async def capture_email(msg: Message, state: FSMContext):
 
 @router.message(F.text, RegistrationStates.password)
 async def capture_password(msg: Message, state: FSMContext):
-    await state.update_data(password=msg.text)
-    await msg.delete()
-    await msg.answer(
-        text="Введите ФИО",
-        reply_markup=to_start_kb()
-    )
-    await state.set_state(RegistrationStates.fullName)
+    if 8 <= len(msg.text) <= 40:
+        await state.update_data(password=msg.text)
+        await msg.delete()
+        await msg.answer(
+            text="Я уверен, что у того, кто захочет взломать твой аккаунт, не будет столько свободного времени 🤓\n"
+                 "И наконец, финальный вопрос: как тебя зовут? Напиши ФИО ✍",
+            reply_markup=to_start_kb()
+        )
+        await state.set_state(RegistrationStates.fullName)
+    else:
+        await msg.delete()
+        await msg.answer(
+            text="Этот пароль легко взломает даже пятиклассник 🤪\n" +
+                 "Придумай что-то посложнее",
+            reply_markup=to_start_kb()
+        )
+        await state.set_state(RegistrationStates.password)
 
 
 @router.message(F.text, RegistrationStates.fullName)
@@ -222,7 +238,7 @@ async def capture_fullname(msg: Message, state: FSMContext):
                 )
                 await state.clear()
                 await msg.answer(
-                    text="Вы успешно зарегистрировались!",
+                    text="Теперь-то будем знакомы! 😊",
                     reply_markup=groups_kb()
                 )
                 await state.clear()
@@ -230,29 +246,29 @@ async def capture_fullname(msg: Message, state: FSMContext):
                 match response["error"]:
                     case "user already exists":
                         await msg.answer(
-                            text="Пользователь с таким Email уже зарегистрирован.\n" +
-                                 "Попробуйте использовать другой адрес",
+                            text="Я уже знаком с человеком, у которого такой же email 🤨\n" +
+                                 "Попробуй использовать другой адрес",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(RegistrationStates.email)
                     case "Key: 'SignUpRequest.Email' Error:Field validation for 'Email' failed on the 'email' tag":
                         await msg.answer(
-                            text="Неверный формат Email.\n" +
-                                 "Попробуйте использовать другой адрес",
+                            text="Неверный формат email 🧐\n" +
+                                 "Попробуй еще раз",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(RegistrationStates.email)
                     case "Key: 'SignUpRequest.Password' Error:Field validation for 'Password' failed on the 'min' tag":
                         await msg.answer(
-                            text="Пароль не соответствует требованиям.\n" +
-                                 "Придумайте другой",
+                            text="Пароль слишком простой 🙃\n" +
+                                 "Придумай другой",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(RegistrationStates.password)
                     case _:
                         await msg.answer(
-                            text="Неверный формат данных.\n" +
-                                 "Попробуйте ввести почту еще раз",
+                            text="Похоже, что-то пошло не по плану... 🫣\n" +
+                                 "Попробуй ввести email еще раз ✍",
                             reply_markup=to_start_kb()
                         )
                         await state.set_state(RegistrationStates.email)
@@ -284,7 +300,8 @@ async def all_groups_handler(msg: Message, state: FSMContext):
                     case "token is expired":
                         await msg.delete_reply_markup()
                         await msg.answer(
-                            text="Пожалуйста, пройдите авторизацию заново",
+                            text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                 "Давай начнем сначала ⤵",
                             reply_markup=auth_kb()
                         )
                         await state.clear()
@@ -298,7 +315,7 @@ async def all_groups_handler(msg: Message, state: FSMContext):
 
                 await state.set_state(GroupStates.id)
                 await msg.answer(
-                    text="Выберите свою группу",
+                    text="Выбери свою группу, чтобы присоединиться ⤵",
                     reply_markup=all_groups_kb(groups)
                 )
 
@@ -313,14 +330,18 @@ async def group_handler(call: CallbackQuery, state: FSMContext):
     await state.update_data(id=group_id)
     await state.set_state(GroupStates.code)
 
-    await call.message.answer(text="Введите код доступа (его можно узнать у старосты)")
+    await call.message.answer(
+        text="Упс, доступ запрещен 🫣\n"
+             "Нужно ввести код. Я уверен, твой староста тебе поможет 😉"
+    )
 
 
 @router.message(F.text, GroupStates.code)
 async def group_join_handler(msg: Message, state: FSMContext):
     code = msg.text
     await state.update_data(code=code)
-
+    await msg.delete()
+    
     try:
         data = await state.get_data()
         access_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
@@ -347,22 +368,23 @@ async def group_join_handler(msg: Message, state: FSMContext):
                 match response["error"]:
                     case "wrong group code" | "access denied":
                         await msg.answer(
-                            text="Неверный код.\n" +
-                                 "Попробуйте ввести его еще раз",
+                            text="Интересно, кто из вас ошибся? 🤔\n" +
+                                 "Попробуй ввести код еще раз",
                             reply_markup=all_groups_kb(groups)
                         )
                         await state.set_state(GroupStates.code)
                     case "token is expired":
                         await msg.delete_reply_markup()
                         await msg.answer(
-                            text="Пожалуйста, пройдите авторизацию заново",
+                            text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                 "Давай начнем сначала ⤵",
                             reply_markup=auth_kb()
                         )
                         await state.clear()
                     case _:
                         await msg.answer(
-                            text="Что-то пошло не так...\n" +
-                                 "Попробуйте ввести код еще раз",
+                            text="Похоже, что-то пошло не по плану... 🫣\n" +
+                                 "Попробуй ввести код еще раз ✍",
                             reply_markup=all_groups_kb(groups)
                         )
                         await state.set_state(GroupStates.code)
@@ -372,7 +394,7 @@ async def group_join_handler(msg: Message, state: FSMContext):
                     value=f"{data.get("id")}"
                 )
                 await msg.answer(
-                    text="Welcome!",
+                    text=f"Welcome! 🥳",
                     reply_markup=schedule_kb()
                 )
                 await state.clear()
@@ -381,7 +403,7 @@ async def group_join_handler(msg: Message, state: FSMContext):
         print(e)
 
 
-@router.message(F.text == "Расписание на сегодня")
+@router.message(F.text == "Расписание на сегодня 🗓")
 async def today_schedule_handler(msg: Message, state: FSMContext):
     try:
         access_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
@@ -405,7 +427,8 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                     case "token is expired":
                         await msg.delete_reply_markup()
                         await msg.answer(
-                            text="Пожалуйста, пройдите авторизацию заново",
+                            text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                 "Давай начнем сначала ⤵",
                             reply_markup=auth_kb()
                         )
             elif "group_id" in response:
@@ -418,7 +441,8 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
 
                 if response is None:
                     await msg.answer(
-                        text="Расписание еще не загружено",
+                        text="Староста еще не загрузил расписание 😪\n" +
+                             "Попробуй поторопить его",
                         reply_markup=schedule_kb()
                     )
                 elif "error" in response:
@@ -426,7 +450,8 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                         case "token is expired":
                             await msg.delete_reply_markup()
                             await msg.answer(
-                                text="Пожалуйста, пройдите авторизацию заново",
+                                text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                     "Давай начнем сначала ⤵",
                                 reply_markup=auth_kb()
                             )
                 else:
@@ -441,11 +466,11 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                                 end_time = ":".join(str(subject["end_time"]).split(":")[:-1])
                                 room = f"ауд. {subject["room"]}"
 
-                                answer += f"{subject["subject_name"]}\n"
-                                answer += f"{subject["type"]}\n"
-                                answer += f"{subject["teacher"]}\n"
-                                answer += f"{room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
-                                answer += f"{start_time} - {end_time}\n"
+                                answer += f"💥 {subject["subject_name"]}\n"
+                                answer += f"📖 {subject["type"]}\n"
+                                answer += f"👨‍🏫 {subject["teacher"]}\n"
+                                answer += f"🔢 {room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
+                                answer += f"⏰ {start_time} - {end_time}\n"
                                 answer += "\n"
 
                     await msg.answer(
@@ -461,7 +486,8 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
 
                 await state.set_state(GroupStates.my_group_id)
                 await msg.answer(
-                    text="Расписание какой группы вы хотите посмотреть?",
+                    text="Я вижу, что ты состоишь в нескольких группах 🧐\n"
+                         "Какое именно расписание ты хочешь посмотреть?",
                     reply_markup=all_groups_kb(my_groups)
                 )
 
@@ -491,7 +517,8 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
 
             if response == "None":
                 await call.message.answer(
-                    text="Расписание еще не загружено",
+                    text="Староста еще не загрузил расписание 😪\n" +
+                         "Попробуй поторопить его",
                     reply_markup=schedule_kb()
                 )
             elif "error" in response:
@@ -499,7 +526,8 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
                     case "token is expired":
                         await call.message.delete_reply_markup()
                         await call.message.answer(
-                            text="Пожалуйста, пройдите авторизацию заново",
+                            text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                 "Давай начнем сначала ⤵",
                             reply_markup=auth_kb()
                         )
             else:
@@ -514,11 +542,11 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
                             end_time = ":".join(str(subject["end_time"]).split(":")[:-1])
                             room = f"ауд. {subject["room"]}"
 
-                            answer += f"{subject["subject_name"]}\n"
-                            answer += f"{subject["type"]}\n"
-                            answer += f"{subject["teacher"]}\n"
-                            answer += f"{room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
-                            answer += f"{start_time} - {end_time}\n"
+                            answer += f"💥 {subject["subject_name"]}\n"
+                            answer += f"📖 {subject["type"]}\n"
+                            answer += f"👨‍🏫 {subject["teacher"]}\n"
+                            answer += f"🔢 {room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
+                            answer += f"⏰{start_time} - {end_time}\n"
                             answer += "\n"
 
                 await call.message.answer(
@@ -531,7 +559,7 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
         print(e)
 
 
-@router.message(F.text == "Моя группа")
+@router.message(F.text == "Моя группа 🫂")
 async def my_group_handler(msg: Message):
     try:
         access_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
@@ -554,32 +582,33 @@ async def my_group_handler(msg: Message):
                     case "token is expired":
                         await msg.delete_reply_markup()
                         await msg.answer(
-                            text="Пожалуйста, пройдите авторизацию заново",
+                            text="Ой, что-то случилось с моей памятью 😵‍💫\n"
+                                 "Давай начнем сначала ⤵",
                             reply_markup=auth_kb()
                         )
             elif "group_id" in response:
                 is_schedule_exists = "да" if response["exists_schedule"] else "нет"
 
-                answer = f"{response["faculty"]}\n"
-                answer += f"{response["program"]}\n"
-                answer += f"{response["short_name"]}\n"
-                answer += f"Количество участников: {response["number_of_people"]}\n"
-                answer += f"Расписание загружено: {is_schedule_exists}\n"
+                answer = f"🏛 {response["faculty"]}\n"
+                answer += f"📚 {response["program"]}\n"
+                answer += f"✨ {response["short_name"]}\n"
+                answer += f"🫂 Количество участников: {response["number_of_people"]}\n"
+                answer += f"🗓 Расписание загружено: {is_schedule_exists}\n"
 
                 await msg.answer(
                     text=answer,
                     reply_markup=schedule_kb()
                 )
             else:
-                answer = "Ваши группы:\n\n"
+                answer = "Вот группы, в которых ты состоишь:\n\n"
                 for group in response:
                     is_schedule_exists = "да" if group["exists_schedule"] else "нет"
 
-                    answer += f"{group["faculty"]}\n"
-                    answer += f"{group["program"]}\n"
-                    answer += f"{group["short_name"]}\n"
-                    answer += f"Количество участников: {group["number_of_people"]}\n"
-                    answer += f"Расписание загружено: {is_schedule_exists}\n"
+                    answer += f"🏛 {group["faculty"]}\n"
+                    answer += f"📚 {group["program"]}\n"
+                    answer += f"✨ {group["short_name"]}\n"
+                    answer += f"🫂 Количество участников: {group["number_of_people"]}\n"
+                    answer += f"🗓 Расписание загружено: {is_schedule_exists}\n"
                     answer += "\n"
 
                 await msg.answer(
@@ -590,7 +619,7 @@ async def my_group_handler(msg: Message):
     except Exception as e:
         print(e)
 
-@router.message(F.text == "Покинуть группу")
+@router.message(F.text == "Покинуть группу ❌")
 async def leave_group_handler(msg: Message):
     try:
         access_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
@@ -609,7 +638,7 @@ async def leave_group_handler(msg: Message):
             print(response)
 
             await msg.answer(
-                text="Вы вышли из группы!",
+                text="Надеюсь, ты не забыл попрощаться с одногруппниками? 🫠",
                 reply_markup=groups_kb()
             )
 
