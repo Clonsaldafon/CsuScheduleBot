@@ -1,28 +1,21 @@
-import json
 from datetime import datetime
-from encodings.utf_8 import decode
-
-from redis import Redis, StrictRedis
 
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
-    CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from aiohttp import ClientSession
-from requests import session
 
 from kb import groups_kb, all_groups_kb, schedule_kb
+from db import redis_client
+from network import post, get
 
 router = Router()
 
-BASE_URL = "http://localhost:8080"
-
-redis_client = StrictRedis(host="localhost", port=6379, db=0)
-
 groups = dict()
 group_ids = []
+
 
 class RegistrationStates(StatesGroup):
     email = State()
@@ -57,21 +50,6 @@ async def capture_password(msg: Message, state: FSMContext):
     await state.set_state(RegistrationStates.fullName)
 
 
-async def post_data(session, url, data, headers):
-    async with session.post(url, data=json.dumps(data), headers=headers) as response:
-        return await response.json()
-
-
-async def post_without_data(session, url, headers):
-    async with session.post(url, headers=headers) as response:
-        return await response.json()
-
-
-async def get_data(session, url, headers):
-    async with session.get(url, headers=headers) as response:
-        return await response.json()
-
-
 @router.message(F.text, RegistrationStates.fullName)
 async def capture_fullname(msg: Message, state: FSMContext):
     await state.update_data(fullName=msg.text)
@@ -90,16 +68,20 @@ async def capture_fullname(msg: Message, state: FSMContext):
             "Content-Type": "application/json"
         }
 
-        try:
-            response_json = await post_data(session, f"{BASE_URL}/v1/api/auth/signup", data, headers)
-            await state.update_data(access_token=response_json["access_token"])
-            await state.update_data(refresh_token=response_json["refresh_token"])
-            redis_client.set(
-                name=f"tg_id:{msg.from_user.id}",
-                value=str(response_json["access_token"])
-            )
-        except Exception as e:
-            print(e)
+        response_json = await post(
+            session=session,
+            url="/v1/api/auth/signup",
+            headers=headers,
+            data=data
+        )
+        print(response_json)
+
+        await state.update_data(access_token=response_json["access_token"])
+        await state.update_data(refresh_token=response_json["refresh_token"])
+        await redis_client.set(
+            name=f"tg_id:{msg.from_user.id}",
+            value=str(response_json["access_token"])
+        )
 
     await msg.answer(text="Вы успешно зарегистрировались!", reply_markup=groups_kb())
     await state.clear()
@@ -108,13 +90,18 @@ async def capture_fullname(msg: Message, state: FSMContext):
 @router.message(F.text == "Группы")
 async def all_groups_handler(msg: Message, state: FSMContext):
     async with ClientSession() as session:
-        redis_value = decode(redis_client.get(f"tg_id:{msg.from_user.id}"))
+        redis_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {redis_value[0]}"
+            "Authorization": f"Bearer {redis_token}"
         }
 
-        response_json = await get_data(session, f"{BASE_URL}/v1/api/groups", headers)
+        response_json = await get(
+            session=session,
+            url="/v1/api/groups",
+            headers=headers
+        )
+        print(response_json)
 
         for group in response_json:
             groups[group["short_name"]] = group["group_id"]
@@ -142,7 +129,7 @@ async def group_join_handler(msg: Message, state: FSMContext):
 
     async with ClientSession() as session:
         state_data = await state.get_data()
-        redis_value = decode(redis_client.get(f"tg_id:{msg.from_user.id}"))
+        redis_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
 
         data = {
             "code": code
@@ -150,16 +137,18 @@ async def group_join_handler(msg: Message, state: FSMContext):
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {redis_value[0]}"
+            "Authorization": f"Bearer {redis_token}"
         }
 
-        response_json = await post_data(
-            session, f"{BASE_URL}/v1/api/groups/{state_data.get("id")}/join", data, headers
+        response_json = await post(
+            session=session,
+            url=f"/v1/api/groups/{state_data.get("id")}/join",
+            headers=headers,
+            data=data
         )
-
         print(response_json)
 
-        redis_client.set(
+        await redis_client.set(
             name=f"group_id:{msg.from_user.id}",
             value=f"{state_data.get("id")}"
         )
@@ -170,15 +159,19 @@ async def group_join_handler(msg: Message, state: FSMContext):
 @router.message(F.text == "Расписание на сегодня")
 async def today_schedule_handler(msg: Message):
     async with ClientSession() as session:
-        redis_token = decode(redis_client.get(f"tg_id:{msg.from_user.id}"))
-        redis_group_id = decode(redis_client.get(f"group_id:{msg.from_user.id}"))
+        redis_token = await redis_client.get(f"tg_id:{msg.from_user.id}")
+        redis_group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {redis_token[0]}"
+            "Authorization": f"Bearer {redis_token}"
         }
 
-        response_json = await get_data(session, f"{BASE_URL}/v1/api/groups/{redis_group_id[0]}/schedule", headers)
+        response_json = await get(
+            session=session,
+            url=f"/v1/api/groups/{redis_group_id}/schedule",
+            headers=headers
+        )
         print(response_json)
 
         is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
