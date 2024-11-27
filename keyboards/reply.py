@@ -28,6 +28,7 @@ def groups_kb():
 def schedule_kb():
     kb_list = [
         [KeyboardButton(text="Расписание на сегодня 🗓")],
+        [KeyboardButton(text="Расписание на неделю 🗓")],
         [KeyboardButton(text="Моя группа 🫂")],
         [KeyboardButton(text="Покинуть группу ❌")]
     ]
