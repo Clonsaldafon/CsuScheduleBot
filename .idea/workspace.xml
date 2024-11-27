@@ -5,8 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/handlers/group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/handlers/schedule.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/handlers/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/keyboards/reply.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/service/group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/service/schedule.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/service/service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/service/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/states/group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/states/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/kb.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/inline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/network.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,17 +47,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.handlers.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.kb.executor&quot;: &quot;Debug&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.handlers.executor": "Debug",
+    "Python.kb.executor": "Debug",
+    "Python.main.executor": "Debug",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot",
+    "settings.editor.selected.configurable": "editor.preferences.fonts.default"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/network" />
+      <recent name="$PROJECT_DIR$/keyboards" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -62,5 +82,16 @@
       <updated>1732370133794</updated>
     </task>
     <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/handlers/schedule.py</url>
+          <line>21</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
