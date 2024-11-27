@@ -6,7 +6,6 @@ def inline_keyboard(kb_list):
         inline_keyboard=kb_list
     )
 
-
 def auth_kb():
     kb_list = [
         [InlineKeyboardButton(text="Создать аккаунт", callback_data="signup")],
@@ -15,6 +14,38 @@ def auth_kb():
 
     return inline_keyboard(kb_list)
 
+def faculties_kb(faculties: dict):
+    kb_list = []
+
+    for name in faculties:
+        kb_list.append(
+            [InlineKeyboardButton(
+                text=name,
+                callback_data=str(faculties[name])
+            )]
+        )
+
+    return inline_keyboard(kb_list)
+
+def programs_kb(programs: list):
+    kb_list = []
+
+    for name in programs:
+        kb_list.append(
+            [InlineKeyboardButton(
+                text=name,
+                callback_data=name
+            )]
+        )
+
+    kb_list.append(
+        [InlineKeyboardButton(
+            text="Назад 🔙",
+            callback_data="back"
+        )]
+    )
+
+    return inline_keyboard(kb_list)
 
 def all_groups_kb(groups: dict):
     kb_list = []
@@ -26,5 +57,12 @@ def all_groups_kb(groups: dict):
                 callback_data=str(groups[short_name])
             )]
         )
+
+    kb_list.append(
+        [InlineKeyboardButton(
+            text="Назад 🔙",
+            callback_data="back"
+        )]
+    )
 
     return inline_keyboard(kb_list)

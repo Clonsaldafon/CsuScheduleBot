@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
 from keyboards.inline import auth_kb
-from keyboards.reply import to_start_kb, schedule_kb, groups_kb
+from keyboards.reply import to_start_kb, schedule_kb, choose_faculty_kb
 from service.user import UserService
 from states.user import LogIn, SignUp
 
@@ -92,7 +92,7 @@ async def capture_password_auth(msg: Message, state: FSMContext):
                 await msg.answer(
                     text="Теперь вспомнил 🤪\n" +
                          "Как же я мог тебя забыть 🤦‍♂️",
-                    reply_markup=groups_kb()
+                    reply_markup=choose_faculty_kb()
                 )
         else:
             match response["error"]:
@@ -177,7 +177,7 @@ async def capture_fullname(msg: Message, state: FSMContext):
             await state.clear()
             await msg.answer(
                 text="Теперь-то будем знакомы! 😊",
-                reply_markup=groups_kb()
+                reply_markup=choose_faculty_kb()
             )
             await state.clear()
         else:

@@ -19,7 +19,7 @@ class GroupService(Service):
 
         return info
 
-    async def get_all_groups(self, token):
+    async def get_groups(self, token, program):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -28,7 +28,7 @@ class GroupService(Service):
 
             return await self.get(
                 session=session,
-                url=self.__url,
+                url=f"{self.__url}?program={program}",
                 headers=headers
             )
 

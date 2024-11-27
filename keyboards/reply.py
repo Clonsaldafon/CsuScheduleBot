@@ -8,7 +8,6 @@ def reply_keyboard(kb_list):
         one_time_keyboard=True
     )
 
-
 def to_start_kb():
     kb_list = [
         [KeyboardButton(text="В начало 🔙")]
@@ -16,14 +15,12 @@ def to_start_kb():
 
     return reply_keyboard(kb_list)
 
-
-def groups_kb():
+def choose_faculty_kb():
     kb_list = [
-        [KeyboardButton(text="Группы")]
+        [KeyboardButton(text="Выбрать факультет")]
     ]
 
     return reply_keyboard(kb_list)
-
 
 def schedule_kb():
     kb_list = [
