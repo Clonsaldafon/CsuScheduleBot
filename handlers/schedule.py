@@ -87,8 +87,6 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
 async def today_schedule_handler(msg: Message, state: FSMContext):
     try:
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
-        group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
-
         group_response = await group_service.get_my(token)
 
         if "error" in group_response:
@@ -103,7 +101,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
         elif "group_id" in group_response:
             response = await schedule_service.get_schedule(
                 token=token,
-                group_id=group_id
+                group_id=group_response["group_id"]
             )
 
             if response is None:
