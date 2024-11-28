@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiohttp import ClientSession
 
 from service.service import Service
@@ -22,7 +24,7 @@ class ScheduleService(Service):
 
         return info
 
-    async def get_schedule(self, token, group_id):
+    async def get_for_today(self, token, group_id):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -32,5 +34,20 @@ class ScheduleService(Service):
             return await self.get(
                 session=session,
                 url=f"{self.__url}/{group_id}/schedule",
+                headers=headers
+            )
+
+    async def get_for_week(self, token, group_id):
+        async with ClientSession() as session:
+            is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
+
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"
+            }
+
+            return await self.get(
+                session=session,
+                url=f"{self.__url}/{group_id}/schedule?week_even={is_even}",
                 headers=headers
             )

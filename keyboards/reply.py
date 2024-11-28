@@ -22,12 +22,22 @@ def choose_faculty_kb():
 
     return reply_keyboard(kb_list)
 
-def schedule_kb():
+def no_subscribed_kb():
+    kb_list = [
+        [KeyboardButton(text="Расписание на сегодня 🗓")],
+        [KeyboardButton(text="Расписание на неделю 🗓")],
+        [KeyboardButton(text="Подписаться на группу 🔔")],
+        [KeyboardButton(text="Вернуться к выбору группы 🔙")]
+    ]
+
+    return reply_keyboard(kb_list)
+
+def subscribed_kb():
     kb_list = [
         [KeyboardButton(text="Расписание на сегодня 🗓")],
         [KeyboardButton(text="Расписание на неделю 🗓")],
         [KeyboardButton(text="Моя группа 🫂")],
-        [KeyboardButton(text="Покинуть группу ❌")]
+        [KeyboardButton(text="Отписаться 🔕")]
     ]
 
     return reply_keyboard(kb_list)

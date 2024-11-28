@@ -7,7 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from db import redis_client
 from handlers.group import group_service
 from keyboards.inline import auth_kb, all_groups_kb
-from keyboards.reply import schedule_kb
+from keyboards.reply import no_subscribed_kb
 from service.schedule import ScheduleService
 from states.group import Group
 
@@ -31,7 +31,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                         reply_markup=auth_kb()
                     )
         elif "group_id" in group_response:
-            response = await schedule_service.get_schedule(
+            response = await schedule_service.get_for_today(
                 token=token,
                 group_id=group_response["group_id"]
             )
@@ -40,7 +40,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                 await msg.answer(
                     text="Староста еще не загрузил расписание 😪\n" +
                          "Попробуй поторопить его",
-                    reply_markup=schedule_kb()
+                    reply_markup=no_subscribed_kb()
                 )
             elif "error" in response:
                 match response["error"]:
@@ -65,7 +65,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
 
                 await msg.answer(
                     text=answer,
-                    reply_markup=schedule_kb()
+                    reply_markup=no_subscribed_kb()
                 )
         else:
             my_groups = dict()
@@ -99,7 +99,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                         reply_markup=auth_kb()
                     )
         elif "group_id" in group_response:
-            response = await schedule_service.get_schedule(
+            response = await schedule_service.get_for_week(
                 token=token,
                 group_id=group_response["group_id"]
             )
@@ -108,7 +108,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
                 await msg.answer(
                     text="Староста еще не загрузил расписание 😪\n" +
                          "Попробуй поторопить его",
-                    reply_markup=schedule_kb()
+                    reply_markup=no_subscribed_kb()
                 )
             elif "error" in response:
                 match response["error"]:
@@ -146,7 +146,7 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
 
                 await msg.answer(
                     text=answer,
-                    reply_markup=schedule_kb()
+                    reply_markup=no_subscribed_kb()
                 )
         else:
             my_groups = dict()
@@ -164,13 +164,21 @@ async def today_schedule_handler(msg: Message, state: FSMContext):
     except Exception as e:
         print(e)
 
+@schedule_router.message(F.text == "Подписаться на группу 🔔")
+async def group_join_handler(msg: Message, state: FSMContext):
+    await msg.answer(
+        text="Упс, доступ запрещен 🫣\n"
+             "Нужно ввести код. Я уверен, староста тебе поможет 😉"
+    )
+    await state.set_state(Group.code)
+
 @schedule_router.callback_query(F.data, Group.my_group_id)
 async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
     group_id = call.data
 
     try:
         token = await redis_client.get(f"tg_id:{call.from_user.id}")
-        response = await schedule_service.get_schedule(
+        response = await schedule_service.get_for_today(
             token=token,
             group_id=group_id
         )
@@ -179,7 +187,7 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
             await call.message.answer(
                 text="Староста еще не загрузил расписание 😪\n" +
                      "Попробуй поторопить его",
-                reply_markup=schedule_kb()
+                reply_markup=no_subscribed_kb()
             )
         elif "error" in response:
             match response["error"]:
@@ -217,7 +225,7 @@ async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
 
             await call.message.answer(
                 text=answer,
-                reply_markup=schedule_kb()
+                reply_markup=no_subscribed_kb()
             )
 
         await state.clear()

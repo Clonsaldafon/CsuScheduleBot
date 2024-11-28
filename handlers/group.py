@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
-from keyboards.reply import schedule_kb, choose_faculty_kb
+from keyboards.reply import no_subscribed_kb, choose_faculty_kb, subscribed_kb
 from service.edu import EduService
 from service.group import GroupService
 from states.group import Group
@@ -147,11 +147,16 @@ async def capture_group(call: CallbackQuery, state: FSMContext):
     group_id = call.data
     await state.update_data(group_id=group_id)
 
-    await call.message.answer(
-        text="Упс, доступ запрещен 🫣\n"
-             "Нужно ввести код. Я уверен, староста тебе поможет 😉"
+    await redis_client.set(
+        name=f"group_id:{call.from_user.id}",
+        value=str(group_id)
     )
-    await state.set_state(Group.code)
+
+    await call.message.answer(
+        text="Теперь с помощью кнопок ниже ты можешь смотреть расписание или подписаться на получение уведомлений",
+        reply_markup=no_subscribed_kb()
+    )
+    await state.clear()
 
 @group_router.callback_query(F.data == "back", Group.group_id)
 async def back_group_handler(call: CallbackQuery, state: FSMContext):
@@ -194,12 +199,12 @@ async def capture_code(msg: Message, state: FSMContext):
     await msg.delete()
 
     try:
-        data = await state.get_data()
+        group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
 
         response = await group_service.join(
             token=token,
-            group_id=data.get("group_id"),
+            group_id=group_id,
             code=code
         )
 
@@ -223,13 +228,11 @@ async def capture_code(msg: Message, state: FSMContext):
                 case _:
                     await msg.answer(
                         text="Похоже, что-то пошло не по плану... 🫣\n" +
-                             "Попробуй ввести код еще раз ✍",
-                        reply_markup=all_groups_kb(all_groups)
+                             "Попробуй ввести код еще раз ✍"
                     )
                     await state.set_state(Group.code)
         else:
-            await redis_client.set(name=f"group_id:{msg.from_user.id}", value=f"{data.get("id")}")
-            await msg.answer(text=f"Welcome! 🥳", reply_markup=schedule_kb())
+            await msg.answer(text=f"Welcome! 🥳", reply_markup=subscribed_kb())
             await state.clear()
     except Exception as e:
         print(e)
@@ -253,7 +256,7 @@ async def my_group_handler(msg: Message):
 
             await msg.answer(
                 text=answer,
-                reply_markup=schedule_kb()
+                reply_markup=no_subscribed_kb()
             )
         else:
             answer = "Вот группы, в которых ты состоишь:\n\n"
@@ -262,20 +265,28 @@ async def my_group_handler(msg: Message):
 
             await msg.answer(
                 text=answer,
-                reply_markup=schedule_kb()
+                reply_markup=no_subscribed_kb()
             )
     except Exception as e:
         print(e)
 
-@group_router.message(F.text == "Покинуть группу ❌")
+@group_router.message(F.text == "Вернуться к выбору группы 🔙")
+async def back_group_handler(msg: Message, state: FSMContext):
+    await msg.answer(
+        text="Ты можешь заново найти нужную тебе группу",
+        reply_markup=choose_faculty_kb()
+    )
+    await state.set_state(Group.faculty_id)
+
+@group_router.message(F.text == "Отписаться 🔕")
 async def leave_group_handler(msg: Message):
     try:
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
         response = await group_service.leave(token)
 
         await msg.answer(
-            text="Надеюсь, ты не забыл попрощаться с одногруппниками? 🫠",
-            reply_markup=choose_faculty_kb()
+            text="Теперь ты не будешь получать уведомления 🫠",
+            reply_markup=no_subscribed_kb()
         )
     except Exception as e:
         print(e)
