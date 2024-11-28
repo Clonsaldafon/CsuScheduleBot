@@ -44,7 +44,7 @@ async def today_schedule_handler(msg: Message):
         else:
             is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
             day_of_week = datetime.today().weekday() + 1
-            answer = ""
+            answer = "<b>Сейчас I неделя</b>\n\n" if (not is_even) else "<b>Сейчас I неделя</b>\n\n"
 
             for subject in response:
                 if subject["is_even"] == is_even:
@@ -89,7 +89,8 @@ async def today_schedule_handler(msg: Message):
                         reply_markup=auth_kb()
                     )
         else:
-            answer = ""
+            is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
+            answer = "<b>Сейчас I неделя</b>\n\n" if (not is_even) else "<b>Сейчас I неделя</b>\n\n"
             last_day = 0
 
             for subject in response:
@@ -117,63 +118,3 @@ async def today_schedule_handler(msg: Message):
             )
     except Exception as e:
         print(e)
-
-# @schedule_router.callback_query(F.data, Group.my_group_id)
-# async def group_schedule_handler(call: CallbackQuery, state: FSMContext):
-#     group_id = call.data
-#
-#     try:
-#         token = await redis_client.get(f"tg_id:{call.from_user.id}")
-#         response = await schedule_service.get_for_today(
-#             token=token,
-#             group_id=group_id
-#         )
-#
-#         if response == "None":
-#             await call.message.answer(
-#                 text="Староста еще не загрузил расписание 😪\n" +
-#                      "Попробуй поторопить его",
-#                 reply_markup=no_subscribed_kb()
-#             )
-#         elif "error" in response:
-#             match response["error"]:
-#                 case "token is expired":
-#                     await call.message.delete_reply_markup()
-#                     await call.message.answer(
-#                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
-#                              "Давай начнем сначала ⤵",
-#                         reply_markup=auth_kb()
-#                     )
-#         else:
-#             is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
-#             answer = ""
-#             last_day = 0
-#
-#             for subject in response:
-#                 if subject["is_even"] == is_even:
-#                     if last_day != subject["day_of_week"]:
-#                         match subject["day_of_week"]:
-#                             case 1:
-#                                 answer += "<b>🟩🟩🟩 Понедельник 🟩🟩🟩</b>"
-#                             case 2:
-#                                 answer += "<b>🟩🟩🟩 Вторник 🟩🟩🟩</b>"
-#                             case 3:
-#                                 answer += "<b>🟩🟩🟩 Среда 🟩🟩🟩</b>"
-#                             case 4:
-#                                 answer += "<b>🟩🟩🟩 Четверг 🟩🟩🟩</b>"
-#                             case 5:
-#                                 answer += "<b>🟩🟩🟩 Пятница 🟩🟩🟩</b>"
-#                             case 6:
-#                                 answer += "<b>🟩🟩🟩 Суббота 🟩🟩🟩</b>"
-#                         answer += "\n"
-#                         last_day = subject["day_of_week"]
-#                     answer += schedule_service.get_info(subject)
-#
-#             await call.message.answer(
-#                 text=answer,
-#                 reply_markup=no_subscribed_kb()
-#             )
-#
-#         await state.clear()
-#     except Exception as e:
-#         print(e)
