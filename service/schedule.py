@@ -39,7 +39,7 @@ class ScheduleService(Service):
 
     async def get_for_week(self, token, group_id):
         async with ClientSession() as session:
-            is_even = (datetime.today().isocalendar().week + 1) % 2 == 0
+            is_even = str((datetime.today().isocalendar().week + 1) % 2 == 0).lower()
 
             headers = {
                 "Content-Type": "application/json",

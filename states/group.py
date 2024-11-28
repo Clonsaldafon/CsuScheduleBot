@@ -5,5 +5,4 @@ class Group(StatesGroup):
     faculty_id = State()
     program = State()
     group_id = State()
-    code = State()
     my_group_id = State()

@@ -191,32 +191,19 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
     except Exception as e:
         print(e)
 
-@group_router.message(F.text, Group.code)
-async def capture_code(msg: Message, state: FSMContext):
-    code = msg.text
-
-    await state.update_data(code=code)
-    await msg.delete()
-
+@group_router.message(F.text == "Подписаться на группу 🔔")
+async def group_join_handler(msg: Message):
     try:
         group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
 
         response = await group_service.join(
             token=token,
-            group_id=group_id,
-            code=code
+            group_id=group_id
         )
 
         if "error" in response:
             match response["error"]:
-                case "wrong group code" | "access denied":
-                    await msg.answer(
-                        text="Интересно, кто из вас ошибся? 🤔\n" +
-                             "Попробуй ввести код еще раз",
-                        reply_markup=all_groups_kb(all_groups)
-                    )
-                    await state.set_state(Group.code)
                 case "token is expired":
                     await msg.delete_reply_markup()
                     await msg.answer(
@@ -224,16 +211,20 @@ async def capture_code(msg: Message, state: FSMContext):
                              "Давай начнем сначала ⤵",
                         reply_markup=auth_kb()
                     )
-                    await state.clear()
                 case _:
                     await msg.answer(
-                        text="Похоже, что-то пошло не по плану... 🫣\n" +
-                             "Попробуй ввести код еще раз ✍"
+                        text="Похоже, что-то пошло не по плану... 🫣",
+                        reply_markup=no_subscribed_kb()
                     )
-                    await state.set_state(Group.code)
         else:
-            await msg.answer(text=f"Welcome! 🥳", reply_markup=subscribed_kb())
-            await state.clear()
+            await redis_client.set(
+                name=f"subscribed:{msg.from_user.id}",
+                value="true"
+            )
+            await msg.answer(
+                text=f"Welcome! 🥳",
+                reply_markup=subscribed_kb()
+            )
     except Exception as e:
         print(e)
 
@@ -241,6 +232,7 @@ async def capture_code(msg: Message, state: FSMContext):
 async def my_group_handler(msg: Message):
     try:
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
+        is_subscribed = await redis_client.get(f"subscribed:{msg.from_user.id}")
         response = await group_service.get_my(token)
 
         if "error" in response:
@@ -256,7 +248,7 @@ async def my_group_handler(msg: Message):
 
             await msg.answer(
                 text=answer,
-                reply_markup=no_subscribed_kb()
+                reply_markup=subscribed_kb() if (is_subscribed == "true") else no_subscribed_kb()
             )
         else:
             answer = "Вот группы, в которых ты состоишь:\n\n"
@@ -265,7 +257,7 @@ async def my_group_handler(msg: Message):
 
             await msg.answer(
                 text=answer,
-                reply_markup=no_subscribed_kb()
+                reply_markup=subscribed_kb() if (is_subscribed == "true") else no_subscribed_kb()
             )
     except Exception as e:
         print(e)
@@ -287,6 +279,11 @@ async def leave_group_handler(msg: Message):
         await msg.answer(
             text="Теперь ты не будешь получать уведомления 🫠",
             reply_markup=no_subscribed_kb()
+        )
+
+        await redis_client.set(
+            name=f"subscribed:{msg.from_user.id}",
+            value="false"
         )
     except Exception as e:
         print(e)
