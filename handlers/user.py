@@ -75,12 +75,12 @@ async def capture_password_auth(msg: Message, state: FSMContext):
 
         if "access_token" in response:
             await redis_client.set(
-                name=f"tg_id:{msg.from_user.id}",
+                name=f"chat_id:{msg.chat.id}",
                 value=str(response["access_token"])
             )
             await state.clear()
 
-            is_group_id_exists = await redis_client.exists(f"group_id:{msg.from_user.id}")
+            is_group_id_exists = await redis_client.exists(f"group_id:{msg.chat.id}")
             if is_group_id_exists:
                 await msg.answer(
                     text="Теперь вспомнил 🤪\n" +
@@ -165,12 +165,12 @@ async def capture_fullname(msg: Message, state: FSMContext):
             email=data.get("email"),
             password=data.get("password"),
             full_name=data.get("fullName"),
-            telegram=str(msg.from_user.id)
+            telegram=str(msg.chat.id)
         )
 
         if "access_token" in response:
             await redis_client.set(
-                name=f"tg_id:{msg.from_user.id}",
+                name=f"chat_id:{msg.chat.id}",
                 value=str(response["access_token"])
             )
             await msg.answer(
