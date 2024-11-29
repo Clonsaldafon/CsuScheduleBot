@@ -18,7 +18,7 @@ all_groups = dict()
 @group_router.message(F.text == "Выбрать факультет")
 async def choose_faculty_handler(msg: Message, state: FSMContext):
     try:
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
         if "error" in response:
@@ -51,7 +51,7 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
     await state.update_data(faculty_id=faculty_id)
 
     try:
-        token = await redis_client.get(f"tg_id:{call.from_user.id}")
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, faculty_id)
 
         if "error" in response:
@@ -85,7 +85,7 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
     await state.update_data(program=program)
 
     try:
-        token = await redis_client.get(f"tg_id:{call.from_user.id}")
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await group_service.get_groups(token, program)
 
         if "error" in response:
@@ -115,7 +115,7 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
 @group_router.callback_query(F.data == "back", Group.program)
 async def back_program_handler(call: CallbackQuery, state: FSMContext):
     try:
-        token = await redis_client.get(f"tg_id:{call.from_user.id}")
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
         if "error" in response:
@@ -148,7 +148,7 @@ async def capture_group(call: CallbackQuery, state: FSMContext):
     await state.update_data(group_id=group_id)
 
     await redis_client.set(
-        name=f"group_id:{call.from_user.id}",
+        name=f"group_id:{call.message.chat.id}",
         value=str(group_id)
     )
 
@@ -164,7 +164,7 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
     faculty_id = await state.get_value("faculty_id")
 
     try:
-        token = await redis_client.get(f"tg_id:{call.from_user.id}")
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, faculty_id)
 
         if "error" in response:
@@ -194,8 +194,8 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
 @group_router.message(F.text == "Подписаться на группу 🔔")
 async def group_join_handler(msg: Message):
     try:
-        group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
+        group_id = await redis_client.get(f"group_id:{msg.chat.id}")
 
         response = await group_service.join(
             token=token,
@@ -218,7 +218,7 @@ async def group_join_handler(msg: Message):
                     )
         else:
             await redis_client.set(
-                name=f"subscribed:{msg.from_user.id}",
+                name=f"subscribed:{msg.chat.id}",
                 value="true"
             )
             await msg.answer(
@@ -231,8 +231,8 @@ async def group_join_handler(msg: Message):
 @group_router.message(F.text == "Моя группа 🫂")
 async def my_group_handler(msg: Message):
     try:
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
+        is_subscribed = await redis_client.get(f"subscribed:{msg.chat.id}")
         response = await group_service.get_my(token)
 
         if "error" in response:
@@ -273,7 +273,7 @@ async def back_group_handler(msg: Message, state: FSMContext):
 @group_router.message(F.text == "Отписаться 🔕")
 async def leave_group_handler(msg: Message):
     try:
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await group_service.leave(token)
 
         await msg.answer(
@@ -282,7 +282,7 @@ async def leave_group_handler(msg: Message):
         )
 
         await redis_client.set(
-            name=f"subscribed:{msg.from_user.id}",
+            name=f"subscribed:{msg.chat.id}",
             value="false"
         )
     except Exception as e:

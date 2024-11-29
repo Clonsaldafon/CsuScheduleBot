@@ -18,9 +18,9 @@ schedule_service = ScheduleService()
 @schedule_router.message(F.text == "Расписание на сегодня 🗓")
 async def today_schedule_handler(msg: Message):
     try:
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
-        group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
+        group_id = await redis_client.get(f"group_id:{msg.chat.id}")
+        is_subscribed = await redis_client.get(f"subscribed:{msg.chat.id}")
 
         response = await schedule_service.get_for_today(
             token=token,
@@ -64,9 +64,9 @@ async def today_schedule_handler(msg: Message):
 @schedule_router.message(F.text == "Расписание на неделю 🗓")
 async def today_schedule_handler(msg: Message):
     try:
-        token = await redis_client.get(f"tg_id:{msg.from_user.id}")
-        group_id = await redis_client.get(f"group_id:{msg.from_user.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{msg.from_user.id}")
+        token = await redis_client.get(f"chat_id:{msg.chat.id}")
+        group_id = await redis_client.get(f"group_id:{msg.chat.id}")
+        is_subscribed = await redis_client.get(f"subscribed:{msg.chat.id}")
 
         response = await schedule_service.get_for_week(
             token=token,
