@@ -4,22 +4,22 @@ from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
 from keyboards.reply import no_subscribed_kb, choose_faculty_kb, subscribed_kb
-from service.edu import EduService
-from service.group import GroupService
+from services.university_structure import UniversityStructureService
+from services.group import GroupService
 from states.group import Group
 from keyboards.inline import auth_kb, all_groups_kb, faculties_kb, programs_kb
 
 
 group_router = Router()
 group_service = GroupService()
-edu_service = EduService()
+university_structure_service = UniversityStructureService()
 all_groups = dict()
 
 @group_router.message(F.text == "Выбрать факультет")
 async def choose_faculty_handler(msg: Message, state: FSMContext):
     try:
         token = await redis_client.get(f"tg_id:{msg.from_user.id}")
-        response = await edu_service.get_faculties(token)
+        response = await university_structure_service.get_faculties(token)
 
         if "error" in response:
             match response["error"]:
@@ -52,7 +52,7 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
 
     try:
         token = await redis_client.get(f"tg_id:{call.from_user.id}")
-        response = await edu_service.get_programs(token, faculty_id)
+        response = await university_structure_service.get_programs(token, faculty_id)
 
         if "error" in response:
             match response["error"]:
@@ -116,7 +116,7 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
 async def back_program_handler(call: CallbackQuery, state: FSMContext):
     try:
         token = await redis_client.get(f"tg_id:{call.from_user.id}")
-        response = await edu_service.get_faculties(token)
+        response = await university_structure_service.get_faculties(token)
 
         if "error" in response:
             match response["error"]:
@@ -165,7 +165,7 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
 
     try:
         token = await redis_client.get(f"tg_id:{call.from_user.id}")
-        response = await edu_service.get_programs(token, faculty_id)
+        response = await university_structure_service.get_programs(token, faculty_id)
 
         if "error" in response:
             match response["error"]:

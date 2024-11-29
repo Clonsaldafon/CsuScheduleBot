@@ -1,6 +1,6 @@
 from aiohttp import ClientSession
 
-from service.service import Service
+from services.service import Service
 
 
 class UserService(Service):

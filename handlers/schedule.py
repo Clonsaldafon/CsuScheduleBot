@@ -8,7 +8,7 @@ from db import redis_client
 from handlers.group import group_service
 from keyboards.inline import auth_kb, all_groups_kb
 from keyboards.reply import no_subscribed_kb, subscribed_kb
-from service.schedule import ScheduleService
+from services.schedule import ScheduleService
 from states.group import Group
 
 

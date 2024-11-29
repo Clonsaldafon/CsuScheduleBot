@@ -6,7 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from db import redis_client
 from keyboards.inline import auth_kb
 from keyboards.reply import to_start_kb, no_subscribed_kb, choose_faculty_kb
-from service.user import UserService
+from services.user import UserService
 from states.user import LogIn, SignUp
 
 
@@ -26,7 +26,6 @@ async def auth_handler(call: CallbackQuery, state: FSMContext):
     await call.message.delete()
 
     data = call.data
-
     match data:
         case "login":
             await call.message.answer(

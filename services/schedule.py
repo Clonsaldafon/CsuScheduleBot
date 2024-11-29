@@ -2,7 +2,7 @@ from datetime import datetime
 
 from aiohttp import ClientSession
 
-from service.service import Service
+from services.service import Service
 
 
 class ScheduleService(Service):
@@ -15,14 +15,11 @@ class ScheduleService(Service):
         end_time = ":".join(str(subject["end_time"]).split(":")[:-1])
         room = f"ауд. {subject["room"]}"
 
-        info = f"💥 {subject["subject_name"]}\n"
-        info += f"📖 {subject["type"]}\n"
-        info += f"👨‍🏫 {subject["teacher"]}\n"
-        info += f"🔢 {room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
-        info += f"⏰ {start_time} - {end_time}\n"
-        info += "\n"
-
-        return info
+        return (f"💥 {subject["subject_name"]}\n"
+                f"📖 {subject["type"]}\n"
+                f"👨‍🏫 {subject["teacher"]}\n"
+                f"🔢 {room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
+                f"⏰ {start_time} - {end_time}\n\n")
 
     async def get_for_today(self, token, group_id):
         async with ClientSession() as session:

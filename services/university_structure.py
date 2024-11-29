@@ -1,9 +1,9 @@
 from aiohttp import ClientSession
 
-from service.service import Service
+from services.service import Service
 
 
-class EduService(Service):
+class UniversityStructureService(Service):
     def __init__(self):
         super().__init__()
         self.__url = "/api/v1/edu"
