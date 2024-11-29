@@ -6,6 +6,14 @@ def inline_keyboard(kb_list):
         inline_keyboard=kb_list
     )
 
+def roles_kb():
+    kb_list = [
+        [InlineKeyboardButton(text="Студент 👨‍🎓", callback_data="student")],
+        [InlineKeyboardButton(text="Админ 🔑", callback_data="admin")]
+    ]
+
+    return inline_keyboard(kb_list)
+
 def auth_kb():
     kb_list = [
         [InlineKeyboardButton(text="Создать аккаунт", callback_data="signup")],
