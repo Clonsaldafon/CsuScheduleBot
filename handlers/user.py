@@ -4,11 +4,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
-from keyboards.inline import auth_kb
+from keyboards.inline import auth_kb, roles_kb
 from keyboards.reply import to_start_kb, no_subscribed_kb, choose_faculty_kb
 from services.user import UserService
-from states.user import LogIn, SignUp
-
+from states.admin import AdminSignUp, AdminLogIn
+from states.student import StudentSignUp, StudentLogIn
 
 user_router = Router()
 user_service = UserService()
@@ -17,196 +17,134 @@ user_service = UserService()
 async def start_handler(msg: Message):
     await msg.answer(
         text="Привет 👋\n" +
-             "Давай знакомиться, для этого создай новый аккаунт либо войди в существующий ⤵",
+             "Чтобы мы с тобой могли взаимодействовать друг с другом, тебе нужно выбрать свою роль ⤵",
+        reply_markup=roles_kb()
+    )
+
+@user_router.callback_query(F.data == "student")
+async def student_handler(call: CallbackQuery, state: FSMContext):
+    await call.message.answer(text="Давай знакомиться! Как тебя зовут? Напиши ФИО ✍️", reply_markup=None)
+    await state.set_state(StudentSignUp.fullname)
+
+@user_router.message(F.text, StudentSignUp.fullname)
+async def capture_student_fullname_signup(msg: Message, state: FSMContext):
+    fullname = msg.text
+    telegram = msg.chat.id
+    await state.update_data(fullname=fullname)
+
+    try:
+        response = await user_service.sign_up_student(fullname=fullname, telegram=telegram)
+
+        if "access_token" in response:
+            await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["access_token"]))
+            await msg.answer(text="Теперь-то будем знакомы! 😊",reply_markup=choose_faculty_kb())
+            await state.clear()
+        else:
+            # TODO: make error handling
+            pass
+    except Exception as e:
+        print(e)
+
+@user_router.message(F.text, StudentLogIn.fullname)
+async def capture_student_fullname_signup(msg: Message, state: FSMContext):
+    # TODO: make student registration
+    pass
+
+@user_router.callback_query(F.data == "admin")
+async def admin_handler(call: CallbackQuery):
+    await call.message.edit_text(
+        text="Для начала работы Вам нужно создать аккаунт или войти в существующий ⤵",
         reply_markup=auth_kb()
     )
 
 @user_router.callback_query(F.data.in_({"login", "signup"}))
-async def auth_handler(call: CallbackQuery, state: FSMContext):
-    await call.message.delete()
-
+async def admin_auth_handler(call: CallbackQuery, state: FSMContext):
     data = call.data
     match data:
         case "login":
             await call.message.answer(
-                text="Хм... Я тебя не помню 🤔\n" +
-                     "Напиши свой email 📧",
+                text="Введите свой email 📧",
                 reply_markup=to_start_kb()
             )
-            await state.set_state(LogIn.email)
+            await state.set_state(AdminLogIn.email)
         case "signup":
             await call.message.answer(
-                text="Я рад, что смог заинтересовать тебя 🤗\n" +
-                     "Заполнишь небольшую анкету? Это займет немного времени ⏰\n" +
-                     "Но зато я тебя запомню, для начала напиши свой email 📧",
+                text="Введите свой email 📧",
                 reply_markup=to_start_kb()
             )
-            await state.set_state(SignUp.email)
+            await state.set_state(AdminSignUp.email)
 
 @user_router.message(F.text == "В начало 🔙")
 async def to_start_handler(msg: Message, state: FSMContext):
     await state.clear()
     await msg.answer(
-        text="Создай новый аккаунт либо войди в существующий ⤵",
+        text="Для начала работы Вам нужно создать аккаунт или войти в существующий ⤵",
         reply_markup=auth_kb()
     )
 
-@user_router.message(F.text, LogIn.email)
-async def capture_email_auth(msg: Message, state: FSMContext):
+@user_router.message(F.text, AdminSignUp.email)
+async def capture_admin_email_signup(msg: Message, state: FSMContext):
     await state.update_data(email=msg.text)
     await msg.answer(
-        text="Как-будто что-то знакомое... 🤔\n" +
-             "А какой пароль? 🔒",
+        text="Придумайте сложный пароль (не менее 8 символов) 🔒",
         reply_markup=to_start_kb()
     )
-    await state.set_state(LogIn.password)
+    await state.set_state(AdminSignUp.password)
 
-@user_router.message(F.text, LogIn.password)
-async def capture_password_auth(msg: Message, state: FSMContext):
+@user_router.message(F.text, AdminSignUp.password)
+async def capture_admin_password_signup(msg: Message, state: FSMContext):
+    if 8 <= len(msg.text) <= 40:
+        await state.update_data(password=msg.text)
+        await msg.delete()
+        data = await state.get_data()
+
+        try:
+            response = await user_service.sign_up_admin(
+                email=data.get("email"),
+                password=data.get("password")
+            )
+
+            if "access_token" in response:
+                await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["access_token"]))
+                await msg.answer(text="Вы успешно зарегистрировались!", reply_markup=None)
+                await state.clear()
+            else:
+                # TODO: make error handling
+                pass
+        except Exception as e:
+            print(e)
+    else:
+        await msg.delete()
+        await msg.answer(
+            text="Этот пароль слишком простой, придумайте другой",
+            reply_markup=to_start_kb()
+        )
+        await state.set_state(AdminSignUp.password)
+
+@user_router.message(F.text, AdminLogIn.email)
+async def capture_admin_email_login(msg: Message, state: FSMContext):
+    await state.update_data(email=msg.text)
+    await msg.answer(text="Введите пароль 🔒", reply_markup=to_start_kb())
+    await state.set_state(AdminLogIn.password)
+
+@user_router.message(F.text, AdminLogIn.password)
+async def capture_admin_password_login(msg: Message, state: FSMContext):
     await state.update_data(password=msg.text)
     await msg.delete()
     data = await state.get_data()
 
     try:
-        response = await user_service.log_in(
+        response = await user_service.log_in_admin(
            email=data.get("email"),
            password=data.get("password")
         )
 
         if "access_token" in response:
-            await redis_client.set(
-                name=f"chat_id:{msg.chat.id}",
-                value=str(response["access_token"])
-            )
-            await state.clear()
-
-            is_group_id_exists = await redis_client.exists(f"group_id:{msg.chat.id}")
-            if is_group_id_exists:
-                await msg.answer(
-                    text="Теперь вспомнил 🤪\n" +
-                         "Как же я мог тебя забыть 🤦‍♂️",
-                    reply_markup=no_subscribed_kb()
-                )
-            else:
-                await msg.answer(
-                    text="Теперь вспомнил 🤪\n" +
-                         "Как же я мог тебя забыть 🤦‍♂️",
-                    reply_markup=choose_faculty_kb()
-                )
-        else:
-            match response["error"]:
-                case "user not found":
-                    await msg.answer(
-                        text="Никак не могу вспомнить человека с таким email 😔\n" +
-                             "Попробуй использовать другой адрес",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(LogIn.email)
-                case "Key: 'LogInRequest.Email' Error:Field validation for 'Email' failed on the 'email' tag":
-                    await msg.answer(
-                        text="Неверный формат email 🧐\n" +
-                             "Попробуй еще раз",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(LogIn.email)
-                case "wrong password":
-                    await msg.answer(
-                        text="Неверный пароль 🔒\n" +
-                             "Попробуй ввести его еще раз",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(LogIn.password)
-                case _:
-                    await msg.answer(
-                        text="Похоже, что-то пошло не по плану... 🫣\n" +
-                             "Попробуй ввести email еще раз ✍",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(LogIn.email)
-    except Exception as e:
-        print(e)
-
-@user_router.message(F.text, SignUp.email)
-async def capture_email(msg: Message, state: FSMContext):
-    await state.update_data(email=msg.text)
-    await msg.answer(
-        text="Придумай сложный пароль (не менее 8 символов) 🔒",
-        reply_markup=to_start_kb()
-    )
-    await state.set_state(SignUp.password)
-
-@user_router.message(F.text, SignUp.password)
-async def capture_password(msg: Message, state: FSMContext):
-    if 8 <= len(msg.text) <= 40:
-        await state.update_data(password=msg.text)
-        await msg.delete()
-        await msg.answer(
-            text="Я уверен, что у того, кто захочет взломать твой аккаунт, не будет столько свободного времени 🤓\n"
-                 "И наконец, финальный вопрос: как тебя зовут? Напиши ФИО ✍",
-            reply_markup=to_start_kb()
-        )
-        await state.set_state(SignUp.fullName)
-    else:
-        await msg.delete()
-        await msg.answer(
-            text="Этот пароль легко взломает даже пятиклассник 🤪\n" +
-                 "Придумай что-то посложнее",
-            reply_markup=to_start_kb()
-        )
-        await state.set_state(SignUp.password)
-
-@user_router.message(F.text, SignUp.fullName)
-async def capture_fullname(msg: Message, state: FSMContext):
-    await state.update_data(fullName=msg.text)
-    data = await state.get_data()
-
-    try:
-        response = await user_service.sign_up(
-            email=data.get("email"),
-            password=data.get("password"),
-            full_name=data.get("fullName"),
-            telegram=str(msg.chat.id)
-        )
-
-        if "access_token" in response:
-            await redis_client.set(
-                name=f"chat_id:{msg.chat.id}",
-                value=str(response["access_token"])
-            )
-            await msg.answer(
-                text="Теперь-то будем знакомы! 😊",
-                reply_markup=choose_faculty_kb()
-            )
+            await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["access_token"]))
+            await msg.answer(text="Вы вошли в систему!", reply_markup=None)
             await state.clear()
         else:
-            match response["error"]:
-                case "user already exists":
-                    await msg.answer(
-                        text="Я уже знаком с человеком, у которого такой же email 🤨\n" +
-                             "Попробуй использовать другой адрес",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(SignUp.email)
-                case "Key: 'SignUpRequest.Email' Error:Field validation for 'Email' failed on the 'email' tag":
-                    await msg.answer(
-                        text="Неверный формат email 🧐\n" +
-                             "Попробуй еще раз",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(SignUp.email)
-                case "Key: 'SignUpRequest.Password' Error:Field validation for 'Password' failed on the 'min' tag":
-                    await msg.answer(
-                        text="Пароль слишком простой 🙃\n" +
-                             "Придумай другой",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(SignUp.password)
-                case _:
-                    await msg.answer(
-                        text="Похоже, что-то пошло не по плану... 🫣\n" +
-                             "Попробуй ввести email еще раз ✍",
-                        reply_markup=to_start_kb()
-                    )
-                    await state.set_state(SignUp.email)
+            # TODO: make error handling
+            pass
     except Exception as e:
         print(e)
