@@ -25,7 +25,20 @@ async def main():
     db.include_routers(user_router, admin_router, group_router, schedule_router)
 
     await bot.delete_webhook(drop_pending_updates=True)
-    await db.start_polling(bot, allowed_updates=db.resolve_used_update_types())
+
+    try:
+        await db.start_polling(
+            bot,
+            allowed_updates=db.resolve_used_update_types(),
+            retry_start=True,
+            disable_notification=False,
+            timeout=20,
+            fast=True
+        )
+    except Exception as e:
+        logging.error(f"An error occurred during polling: {e}")
+        await asyncio.sleep(10)
+        await main()
 
 
 if __name__ == "__main__":
