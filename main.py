@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from aiogram.fsm.storage.redis import RedisStorage
 
 from db import redis_client
+from handlers.admin import admin_router
 from handlers.group import group_router
 from handlers.schedule import schedule_router
 from handlers.user import user_router
@@ -21,7 +22,7 @@ async def main():
 
     bot = Bot(token=os.getenv("BOT_TOKEN"), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     db = Dispatcher(storage=RedisStorage(redis=redis_client))
-    db.include_routers(user_router, group_router, schedule_router)
+    db.include_routers(user_router, admin_router, group_router, schedule_router)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await db.start_polling(bot, allowed_updates=db.resolve_used_update_types())

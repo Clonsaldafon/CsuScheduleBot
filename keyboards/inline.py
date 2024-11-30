@@ -22,6 +22,13 @@ def auth_kb():
 
     return inline_keyboard(kb_list)
 
+def back_kb():
+    kb_list = [
+        [InlineKeyboardButton(text="Назад 🔙", callback_data="back")]
+    ]
+
+    return inline_keyboard(kb_list)
+
 def faculties_kb(faculties: dict):
     kb_list = []
 
