@@ -7,8 +7,7 @@ from keyboards.reply import no_subscribed_kb, choose_faculty_kb, subscribed_kb
 from services.university_structure import UniversityStructureService
 from services.group import GroupService
 from states.group import Group
-from keyboards.inline import auth_kb, all_groups_kb, faculties_kb, programs_kb
-
+from keyboards.inline import auth_kb, all_groups_kb, faculties_with_id_kb, programs_with_id_kb, programs_kb
 
 group_router = Router()
 group_service = GroupService()
@@ -21,8 +20,8 @@ async def choose_faculty_handler(msg: Message, state: FSMContext):
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await msg.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -33,19 +32,19 @@ async def choose_faculty_handler(msg: Message, state: FSMContext):
         else:
             faculties = dict()
 
-            for faculty in response:
+            for faculty in response["data"]:
                 faculties[faculty["name"]] = faculty["faculty_id"]
 
             await msg.answer(
                 text="Выбери свой факультет",
-                reply_markup=faculties_kb(faculties)
+                reply_markup=faculties_with_id_kb(faculties)
             )
 
-            await state.set_state(Group.faculty_id)
+            await state.set_state(Group.faculty)
     except Exception as e:
         print(e)
 
-@group_router.callback_query(F.data, Group.faculty_id)
+@group_router.callback_query(F.data, Group.faculty)
 async def capture_faculty(call: CallbackQuery, state: FSMContext):
     faculty_id = call.data
     await state.update_data(faculty_id=faculty_id)
@@ -54,8 +53,8 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, faculty_id)
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await call.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -64,9 +63,9 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
                     )
                     await state.clear()
         else:
-            programs = []
+            programs = list()
 
-            for program in response:
+            for program in response["data"]:
                 programs.append(program["name"])
 
             await call.message.edit_text(
@@ -88,8 +87,11 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await group_service.get_groups(token, program)
 
-        if "error" in response:
-            match response["error"]:
+        if response["data"] is None:
+            await call.message.answer(text="Группы здесь скоро появятся...", reply_markup=choose_faculty_kb())
+            await state.clear()
+        elif "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await call.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -100,7 +102,7 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
         else:
             groups = dict()
 
-            for group in response:
+            for group in response["data"]:
                 groups[group["short_name"]] = group["group_id"]
 
             await call.message.edit_text(
@@ -118,8 +120,8 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await call.message.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -130,15 +132,15 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         else:
             faculties = dict()
 
-            for faculty in response:
+            for faculty in response["data"]:
                 faculties[faculty["name"]] = faculty["faculty_id"]
 
             await call.message.edit_text(
                 text="Выбери свой факультет",
-                reply_markup=faculties_kb(faculties)
+                reply_markup=faculties_with_id_kb(faculties)
             )
 
-            await state.set_state(Group.faculty_id)
+            await state.set_state(Group.faculty)
     except Exception as e:
         print(e)
 
@@ -167,8 +169,8 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, faculty_id)
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await call.message.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -177,9 +179,9 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
                     )
                     await state.clear()
         else:
-            programs = []
+            programs = list()
 
-            for program in response:
+            for program in response["data"]:
                 programs.append(program["name"])
 
             await call.message.edit_text(
@@ -202,8 +204,8 @@ async def group_join_handler(msg: Message):
             group_id=group_id
         )
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await msg.delete_reply_markup()
                     await msg.answer(
@@ -235,16 +237,16 @@ async def my_group_handler(msg: Message):
         is_subscribed = await redis_client.get(f"subscribed:{msg.chat.id}")
         response = await group_service.get_my(token)
 
-        if "error" in response:
-            match response["error"]:
+        if "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await msg.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
                              "Давай начнем сначала ⤵",
                         reply_markup=auth_kb()
                     )
-        elif "group_id" in response:
-            answer = group_service.get_info(response)
+        elif "group_id" in response["data"]:
+            answer = group_service.get_info(response["data"])
 
             await msg.answer(
                 text=answer,
@@ -252,7 +254,7 @@ async def my_group_handler(msg: Message):
             )
         else:
             answer = "Вот группы, в которых ты состоишь:\n\n"
-            for group in response:
+            for group in response["data"]:
                 answer += group_service.get_info(group)
 
             await msg.answer(
@@ -268,7 +270,7 @@ async def back_group_handler(msg: Message, state: FSMContext):
         text="Ты можешь заново найти нужную тебе группу",
         reply_markup=choose_faculty_kb()
     )
-    await state.set_state(Group.faculty_id)
+    await state.set_state(Group.faculty)
 
 @group_router.message(F.text == "Отписаться 🔕")
 async def leave_group_handler(msg: Message):

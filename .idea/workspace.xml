@@ -5,14 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/handlers/admin.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/admin.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/states/university_structure.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/schedule.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/handlers/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/keyboards/inline.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/inline.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/keyboards/reply.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/reply.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/service.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/states/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/states/group.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,12 +43,13 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.group.executor": "Debug",
     "Python.handlers.executor": "Debug",
     "Python.kb.executor": "Debug",
-    "Python.main.executor": "Run",
+    "Python.main.executor": "Debug",
     "Python.schedule.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "features/admin",
+    "git-widget-placeholder": "develop",
     "last_opened_file_path": "/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot",
     "settings.editor.selected.configurable": "editor.preferences.fonts.default"
   }
@@ -76,5 +78,16 @@
       <updated>1732370133794</updated>
     </task>
     <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/handlers/group.py</url>
+          <line>237</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

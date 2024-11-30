@@ -27,14 +27,14 @@ async def today_schedule_handler(msg: Message):
             group_id=group_id
         )
 
-        if response is None:
+        if response["data"] is None:
             await msg.answer(
                 text="Староста еще не загрузил расписание 😪\n" +
                      "Попробуй поторопить его",
                 reply_markup=subscribed_kb() if (is_subscribed == "true") else no_subscribed_kb()
             )
-        elif "error" in response:
-            match response["error"]:
+        elif "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await msg.answer(
                         text="Ой, что-то случилось с моей памятью 😵‍💫\n"
@@ -46,7 +46,7 @@ async def today_schedule_handler(msg: Message):
             day_of_week = datetime.today().weekday() + 1
             answer = "<b>Сейчас I неделя</b>\n\n" if (not is_even) else "<b>Сейчас I неделя</b>\n\n"
 
-            for subject in response:
+            for subject in response["data"]:
                 if subject["is_even"] == is_even:
                     if subject["day_of_week"] == day_of_week:
                         answer += schedule_service.get_info(subject)
@@ -73,14 +73,14 @@ async def today_schedule_handler(msg: Message):
             group_id=group_id
         )
 
-        if response is None:
+        if response["data"] is None:
             await msg.answer(
                 text="Староста еще не загрузил расписание 😪\n" +
                      "Попробуй поторопить его",
                 reply_markup=subscribed_kb() if (is_subscribed == "true") else no_subscribed_kb()
             )
-        elif "error" in response:
-            match response["error"]:
+        elif "error" in response["data"]:
+            match response["data"]["error"]:
                 case "token is expired":
                     await msg.delete_reply_markup()
                     await msg.answer(
@@ -93,7 +93,7 @@ async def today_schedule_handler(msg: Message):
             answer = "<b>Сейчас I неделя</b>\n\n" if (not is_even) else "<b>Сейчас I неделя</b>\n\n"
             last_day = 0
 
-            for subject in response:
+            for subject in response["data"]:
                 if last_day != subject["day_of_week"]:
                     match subject["day_of_week"]:
                         case 1:

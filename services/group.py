@@ -52,7 +52,7 @@ class GroupService(Service):
 
             return await self.get(
                 session=session,
-                url=f"{self.__url}/my",
+                url=f"{self.__url}/me",
                 headers=headers
             )
 

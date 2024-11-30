@@ -29,7 +29,7 @@ def back_kb():
 
     return inline_keyboard(kb_list)
 
-def faculties_kb(faculties: dict):
+def faculties_with_id_kb(faculties: dict):
     kb_list = []
 
     for name in faculties:
@@ -39,6 +39,26 @@ def faculties_kb(faculties: dict):
                 callback_data=str(faculties[name])
             )]
         )
+
+    return inline_keyboard(kb_list)
+
+def programs_with_id_kb(programs: dict):
+    kb_list = []
+
+    for name in programs:
+        kb_list.append(
+            [InlineKeyboardButton(
+                text=name,
+                callback_data=str(programs[name])
+            )]
+        )
+
+    kb_list.append(
+        [InlineKeyboardButton(
+            text="Назад 🔙",
+            callback_data="back"
+        )]
+    )
 
     return inline_keyboard(kb_list)
 

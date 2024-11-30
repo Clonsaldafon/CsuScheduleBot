@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
-from keyboards.inline import faculties_kb, programs_kb
+from keyboards.inline import faculties_with_id_kb, programs_with_id_kb
 from keyboards.reply import admin_kb
 from services.admin import AdminService
 from services.university_structure import UniversityStructureService
@@ -19,18 +19,18 @@ async def create_group_handler(msg: Message, state: FSMContext):
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
-        if "error" in response:
-            # TODO: make error handling
-            pass
+        if "error" in response["data"]:
+            await msg.answer(text="🤖 Что-то пошло не так... Попробуйте позже ", reply_markup=admin_kb())
+            await state.clear()
         else:
             faculties = dict()
 
-            for faculty in response:
+            for faculty in response["data"]:
                 faculties[faculty["name"]] = faculty["faculty_id"]
 
             await msg.answer(
                 text="Выберите факультет",
-                reply_markup=faculties_kb(faculties)
+                reply_markup=faculties_with_id_kb(faculties)
             )
 
             await state.set_state(UniversityStructure.faculty_id)
@@ -46,18 +46,18 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, faculty_id)
 
-        if "error" in response:
-            # TODO: make error handling
-            pass
+        if "error" in response["data"]:
+            await call.message.edit_text(text="🤖 Что-то пошло не так... Попробуйте позже ", reply_markup=admin_kb())
+            await state.clear()
         else:
-            programs = []
+            programs = dict()
 
-            for program in response:
-                programs.append(program["name"])
+            for program in response["data"]:
+                programs[program["name"]] = program["program_id"]
 
             await call.message.edit_text(
                 text="Выберите программу обучения",
-                reply_markup=programs_kb(programs)
+                reply_markup=programs_with_id_kb(programs)
             )
 
             await state.set_state(UniversityStructure.program_id)
@@ -78,18 +78,18 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_faculties(token)
 
-        if "error" in response:
-            # TODO: make error handling
-            pass
+        if "error" in response["data"]:
+            await call.message.edit_text(text="🤖 Что-то пошло не так... Попробуйте позже ", reply_markup=admin_kb())
+            await state.clear()
         else:
             faculties = dict()
 
-            for faculty in response:
+            for faculty in response["data"]:
                 faculties[faculty["name"]] = faculty["faculty_id"]
 
             await call.message.edit_text(
                 text="Выберите факультет",
-                reply_markup=faculties_kb(faculties)
+                reply_markup=faculties_with_id_kb(faculties)
             )
 
             await state.set_state(UniversityStructure.faculty_id)
@@ -107,14 +107,14 @@ async def capture_short_name(msg: Message, state: FSMContext):
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await admin_service.create_group(
             token=token,
-            faculty_id=data.get("faculty_id"),
-            program_id=data.get("program_id"),
+            faculty_id=int(data.get("faculty_id")),
+            program_id=int(data.get("program_id")),
             short_name=data.get("short_name")
         )
 
-        if "error" in response:
-            # TODO: make error handling
-            pass
+        if "error" in response["data"]:
+            await msg.edit_text(text="🤖 Что-то пошло не так... Попробуйте позже ", reply_markup=admin_kb())
+            await state.clear()
         else:
             await msg.answer(text=f"Группа {short_name} успешно создана!", reply_markup=admin_kb())
             await state.clear()
@@ -129,18 +129,18 @@ async def back_short_name_handler(call: CallbackQuery, state: FSMContext):
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         response = await university_structure_service.get_programs(token, data.get("faculty_id"))
 
-        if "error" in response:
+        if "error" in response["data"]:
             # TODO: make error handling
             pass
         else:
-            programs = []
+            programs = dict()
 
-            for program in response:
-                programs.append(program["name"])
+            for program in response["data"]:
+                programs[program["name"]] = program["program_id"]
 
             await call.message.edit_text(
                 text="Выберите программу обучения",
-                reply_markup=programs_kb(programs)
+                reply_markup=programs_with_id_kb(programs)
             )
 
             await state.set_state(UniversityStructure.program_id)
