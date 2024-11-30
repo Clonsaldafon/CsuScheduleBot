@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 
 from db import redis_client
 from keyboards.inline import auth_kb, roles_kb
-from keyboards.reply import to_start_kb, no_subscribed_kb, choose_faculty_kb
+from keyboards.reply import to_start_kb, no_subscribed_kb, choose_faculty_kb, admin_kb
 from services.user import UserService
 from states.admin import AdminSignUp, AdminLogIn
 from states.student import StudentSignUp, StudentLogIn
@@ -106,7 +106,7 @@ async def capture_admin_password_signup(msg: Message, state: FSMContext):
 
             if "access_token" in response:
                 await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["access_token"]))
-                await msg.answer(text="Вы успешно зарегистрировались!", reply_markup=None)
+                await msg.answer(text="Вы успешно зарегистрировались!", reply_markup=admin_kb())
                 await state.clear()
             else:
                 # TODO: make error handling
@@ -141,7 +141,7 @@ async def capture_admin_password_login(msg: Message, state: FSMContext):
 
         if "access_token" in response:
             await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["access_token"]))
-            await msg.answer(text="Вы вошли в систему!", reply_markup=None)
+            await msg.answer(text="Вы вошли в систему!", reply_markup=admin_kb())
             await state.clear()
         else:
             # TODO: make error handling

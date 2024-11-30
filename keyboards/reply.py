@@ -15,6 +15,14 @@ def to_start_kb():
 
     return reply_keyboard(kb_list)
 
+def admin_kb():
+    kb_list = [
+        [KeyboardButton(text="Создать группу 👥")],
+        [KeyboardButton(text="Редактировать расписание 🗓️")]
+    ]
+
+    return reply_keyboard(kb_list)
+
 def choose_faculty_kb():
     kb_list = [
         [KeyboardButton(text="Выбрать факультет")]
