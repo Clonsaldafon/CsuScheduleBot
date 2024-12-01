@@ -7,12 +7,12 @@ from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUD
     SOMETHING_WITH_FULLNAME_VALIDATION, STUDENT_IS_ALREADY_SIGNED_UP, STUDENT_NO_SIGNED_UP, SOMETHING_WENT_WRONG, \
     ADMIN_START, ENTER_YOUR_EMAIL, INVENT_PASSWORD, ADMIN_SIGNED_UP_SUCCESS, ADMIN_EMAIL_VALIDATION, \
     ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, ADMIN_PASSWORD_IS_SHORT, ENTER_PASSWORD, ADMIN_LOGGED_IN_SUCCESS, \
-    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD
+    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
 from keyboards.inline import auth_kb, roles_kb
-from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb
+from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, subscribed_kb, no_subscribed_kb
 from services.user import UserService
 from states.admin import AdminSignUp, AdminLogIn
 from states.student import StudentSignUp, StudentLogIn
@@ -26,8 +26,26 @@ async def start_handler(msg: Message):
 
 @user_router.callback_query(F.data == CallbackData.STUDENT_CALLBACK)
 async def student_handler(call: CallbackQuery, state: FSMContext):
-    await call.message.answer(text=STUDENT_SIGN_UP, reply_markup=None)
-    await state.set_state(StudentSignUp.fullname)
+    try:
+        response = await user_service.log_in_student(call.message.chat.id)
+
+        if "access_token" in response["data"]:
+            await redis_client.set(name=f"chat_id:{call.message.chat.id}", value=str(response["data"]["access_token"]))
+
+            is_subscribed = await redis_client.get(f"subscribed:{call.message.chat.id}")
+            if is_subscribed is None:
+                await call.message.answer(text=STUDENT_SIGNED_UP, reply_markup=choose_faculty_kb())
+                await state.clear()
+                return
+
+            kb = subscribed_kb if (is_subscribed == "true") else no_subscribed_kb
+            await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=kb())
+            await state.clear()
+        else:
+            await call.message.answer(text=STUDENT_SIGN_UP, reply_markup=None)
+            await state.set_state(StudentSignUp.fullname)
+    except Exception as e:
+        print(e)
 
 @user_router.message(F.text, StudentSignUp.fullname)
 async def capture_student_fullname_signup(msg: Message, state: FSMContext):
@@ -63,7 +81,7 @@ async def capture_student_fullname_signup(msg: Message, state: FSMContext):
         print(e)
 
 @user_router.message(F.text, StudentLogIn.fullname)
-async def capture_student_fullname_signup(msg: Message, state: FSMContext):
+async def capture_student_fullname_login(msg: Message, state: FSMContext):
     # TODO: make student authorization
     pass
 
