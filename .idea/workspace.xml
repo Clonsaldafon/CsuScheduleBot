@@ -5,15 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/service/edu.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/consts/bot_answer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/consts/error.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/consts/kb.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/database/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/handlers/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/group.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/handlers/schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/schedule.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/handlers/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/keyboards/inline.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/inline.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/keyboards/reply.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/reply.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/service/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/service/group.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/states/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/states/group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/states/university_structure.py" beforeDir="false" afterPath="$PROJECT_DIR$/states/university_structure.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,20 +46,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.handlers.executor": "Debug",
-    "Python.kb.executor": "Debug",
-    "Python.main.executor": "Run",
-    "Python.schedule.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot",
-    "settings.editor.selected.configurable": "editor.preferences.fonts.default"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.group.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.handlers.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.kb.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.schedule.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;develop&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/db" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/network" />
       <recent name="$PROJECT_DIR$/keyboards" />

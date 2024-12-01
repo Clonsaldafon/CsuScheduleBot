@@ -1,68 +1,49 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+from consts.kb import ButtonText, CallbackData
 
 
-def inline_keyboard(kb_list):
-    return InlineKeyboardMarkup(
-        inline_keyboard=kb_list
-    )
+def roles_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.STUDENT, callback_data=CallbackData.STUDENT_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.ADMIN, callback_data=CallbackData.ADMIN_CALLBACK))
+    return builder.adjust(2).as_markup(resize_keyboard=True)
 
 def auth_kb():
-    kb_list = [
-        [InlineKeyboardButton(text="Создать аккаунт", callback_data="signup")],
-        [InlineKeyboardButton(text="Войти", callback_data="login")]
-    ]
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.SIGN_UP, callback_data=CallbackData.SIGN_UP_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.LOG_IN, callback_data=CallbackData.LOG_IN_CALLBACK))
+    return builder.adjust(2).as_markup(resize_keyboard=True)
 
-    return inline_keyboard(kb_list)
+def back_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.as_markup(resize_keyboard=True)
 
-def faculties_kb(faculties: dict):
-    kb_list = []
-
+def faculties_with_id_kb(faculties: dict):
+    builder = InlineKeyboardBuilder()
     for name in faculties:
-        kb_list.append(
-            [InlineKeyboardButton(
-                text=name,
-                callback_data=str(faculties[name])
-            )]
-        )
+        builder.add(InlineKeyboardButton(text=name, callback_data=str(faculties[name])))
+    return builder.adjust(1).as_markup(resize_keyboard=True)
 
-    return inline_keyboard(kb_list)
+def programs_with_id_kb(programs: dict):
+    builder = InlineKeyboardBuilder()
+    for name in programs:
+        builder.add(InlineKeyboardButton(text=name, callback_data=str(programs[name])))
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1).as_markup(resize_keyboard=True)
 
 def programs_kb(programs: list):
-    kb_list = []
-
+    builder = InlineKeyboardBuilder()
     for name in programs:
-        kb_list.append(
-            [InlineKeyboardButton(
-                text=name,
-                callback_data=name
-            )]
-        )
-
-    kb_list.append(
-        [InlineKeyboardButton(
-            text="Назад 🔙",
-            callback_data="back"
-        )]
-    )
-
-    return inline_keyboard(kb_list)
+        builder.add(InlineKeyboardButton(text=name, callback_data=name))
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1).as_markup(resize_keyboard=True)
 
 def all_groups_kb(groups: dict):
-    kb_list = []
-
+    builder = InlineKeyboardBuilder()
     for short_name in groups:
-        kb_list.append(
-            [InlineKeyboardButton(
-                text=short_name,
-                callback_data=str(groups[short_name])
-            )]
-        )
-
-    kb_list.append(
-        [InlineKeyboardButton(
-            text="Назад 🔙",
-            callback_data="back"
-        )]
-    )
-
-    return inline_keyboard(kb_list)
+        builder.add(InlineKeyboardButton(text=short_name, callback_data=str(groups[short_name])))
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1).as_markup(resize_keyboard=True)

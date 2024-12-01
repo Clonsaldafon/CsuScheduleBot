@@ -1,43 +1,37 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
+from consts.kb import ButtonText
 
-def reply_keyboard(kb_list):
-    return ReplyKeyboardMarkup(
-        keyboard=kb_list,
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
 
 def to_start_kb():
-    kb_list = [
-        [KeyboardButton(text="В начало 🔙")]
-    ]
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text=ButtonText.TO_START))
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
-    return reply_keyboard(kb_list)
+def admin_kb():
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text=ButtonText.CREATE_GROUP))
+    builder.add(KeyboardButton(text=ButtonText.EDIT_SCHEDULE))
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def choose_faculty_kb():
-    kb_list = [
-        [KeyboardButton(text="Выбрать факультет")]
-    ]
-
-    return reply_keyboard(kb_list)
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text=ButtonText.CHOOSE_FACULTY))
+    return builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def no_subscribed_kb():
-    kb_list = [
-        [KeyboardButton(text="Расписание на сегодня 🗓")],
-        [KeyboardButton(text="Расписание на неделю 🗓")],
-        [KeyboardButton(text="Подписаться на группу 🔔")],
-        [KeyboardButton(text="Вернуться к выбору группы 🔙")]
-    ]
-
-    return reply_keyboard(kb_list)
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text=ButtonText.TODAY_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.WEEK_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.SUBSCRIBE))
+    builder.add(KeyboardButton(text=ButtonText.BACK_TO_GROUP_CHOICE))
+    return builder.adjust(2).as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def subscribed_kb():
-    kb_list = [
-        [KeyboardButton(text="Расписание на сегодня 🗓")],
-        [KeyboardButton(text="Расписание на неделю 🗓")],
-        [KeyboardButton(text="Моя группа 🫂")],
-        [KeyboardButton(text="Отписаться 🔕")]
-    ]
-
-    return reply_keyboard(kb_list)
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text=ButtonText.TODAY_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.WEEK_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.MY_GROUP))
+    builder.add(KeyboardButton(text=ButtonText.UNSUBSCRIBE))
+    return builder.adjust(2).as_markup(resize_keyboard=True, one_time_keyboard=True)

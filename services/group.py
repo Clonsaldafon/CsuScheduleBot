@@ -1,6 +1,6 @@
 from aiohttp import ClientSession
 
-from service.service import Service
+from services.service import Service
 
 
 class GroupService(Service):
@@ -10,14 +10,12 @@ class GroupService(Service):
 
     def get_info(self, group):
         is_schedule_exists = "да" if group["exists_schedule"] else "нет"
-        info = f"🏛 {group["faculty"]}\n"
-        info += f"📚 {group["program"]}\n"
-        info += f"✨ {group["short_name"]}\n"
-        info += f"🫂 Количество подписчиков: {group["number_of_people"]}\n"
-        info += f"🗓 Расписание загружено: {is_schedule_exists}\n"
-        info += "\n"
 
-        return info
+        return (f"🏛 {group["faculty"]}\n"
+                f"📚 {group["program"]}\n"
+                f"✨ {group["short_name"]}\n"
+                f"🫂 Количество подписчиков: {group["number_of_people"]}\n"
+                f"🗓 Расписание загружено: {is_schedule_exists}\n\n")
 
     async def get_groups(self, token, program):
         async with ClientSession() as session:
@@ -32,7 +30,7 @@ class GroupService(Service):
                 headers=headers
             )
 
-    async def join(self, token, group_id):
+    async def subscribe(self, token, group_id):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -54,11 +52,11 @@ class GroupService(Service):
 
             return await self.get(
                 session=session,
-                url=f"{self.__url}/my",
+                url=f"{self.__url}/me",
                 headers=headers
             )
 
-    async def leave(self, token):
+    async def unsubscribe(self, token):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",

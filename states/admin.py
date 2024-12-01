@@ -1,12 +1,11 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class SignUp(StatesGroup):
+class AdminSignUp(StatesGroup):
     email = State()
     password = State()
-    fullName = State()
 
 
-class LogIn(StatesGroup):
+class AdminLogIn(StatesGroup):
     email = State()
     password = State()
