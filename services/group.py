@@ -30,7 +30,7 @@ class GroupService(Service):
                 headers=headers
             )
 
-    async def join(self, token, group_id):
+    async def subscribe(self, token, group_id):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -56,7 +56,7 @@ class GroupService(Service):
                 headers=headers
             )
 
-    async def leave(self, token):
+    async def unsubscribe(self, token):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",

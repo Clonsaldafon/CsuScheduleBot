@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from aiogram.fsm.storage.redis import RedisStorage
 
-from db import redis_client
+from database.db import redis_client
 from handlers.admin import admin_router
 from handlers.group import group_router
 from handlers.schedule import schedule_router
@@ -36,8 +36,8 @@ async def main():
             fast=True
         )
     except Exception as e:
-        logging.error(f"An error occurred during polling: {e}")
-        await asyncio.sleep(10)
+        logging.error(msg=f"An error occurred during polling: {e}")
+        await asyncio.sleep(delay=10)
         await main()
 
 
