@@ -22,16 +22,14 @@ def choose_faculty_kb():
 
 def no_subscribed_kb():
     builder = ReplyKeyboardBuilder()
-    builder.add(KeyboardButton(text=ButtonText.TODAY_SCHEDULE))
-    builder.add(KeyboardButton(text=ButtonText.WEEK_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.SCHEDULE))
     builder.add(KeyboardButton(text=ButtonText.SUBSCRIBE))
     builder.add(KeyboardButton(text=ButtonText.BACK_TO_GROUP_CHOICE))
     return builder.adjust(2).as_markup(resize_keyboard=True, one_time_keyboard=True)
 
 def subscribed_kb():
     builder = ReplyKeyboardBuilder()
-    builder.add(KeyboardButton(text=ButtonText.TODAY_SCHEDULE))
-    builder.add(KeyboardButton(text=ButtonText.WEEK_SCHEDULE))
+    builder.add(KeyboardButton(text=ButtonText.SCHEDULE))
     builder.add(KeyboardButton(text=ButtonText.MY_GROUP))
     builder.add(KeyboardButton(text=ButtonText.UNSUBSCRIBE))
     return builder.adjust(2).as_markup(resize_keyboard=True, one_time_keyboard=True)
