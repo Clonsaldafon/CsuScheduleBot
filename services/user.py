@@ -11,11 +11,12 @@ class UserService(Service):
             "Content-Type": "application/json"
         }
 
-    async def sign_up_student(self, fullname, telegram):
+    async def sign_up_student(self, fullname, telegram, username):
         async with ClientSession() as session:
             body = {
                 "full_name": fullname,
-                "telegram_chat_id": telegram
+                "telegram_chat_id": telegram,
+                "telegram_username": username
             }
 
             return await self.post(

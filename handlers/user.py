@@ -51,10 +51,11 @@ async def student_handler(call: CallbackQuery, state: FSMContext):
 async def capture_student_fullname_signup(msg: Message, state: FSMContext):
     fullname = msg.text
     telegram = msg.chat.id
+    username = msg.chat.username
     await state.update_data(fullname=fullname)
 
     try:
-        response = await user_service.sign_up_student(fullname=fullname, telegram=telegram)
+        response = await user_service.sign_up_student(fullname=fullname, telegram=telegram, username=username)
         if response["status_code"] == 201:
             await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["data"]["access_token"]))
             await msg.answer(text=STUDENT_SIGNED_UP, reply_markup=choose_faculty_kb())
