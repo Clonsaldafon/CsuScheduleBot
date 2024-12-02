@@ -1,6 +1,6 @@
 class ButtonText:
-    STUDENT = "Студент 👨‍🎓"
-    ADMIN = "Админ 🔑"
+    STUDENT = "👨‍🎓 Студент"
+    ADMIN = "🔑 Админ"
 
     SIGN_UP = "Создать аккаунт"
     LOG_IN = "Войти"
@@ -8,20 +8,22 @@ class ButtonText:
     BACK = "🔙 Назад"
     TO_START = "🔙 В начало"
 
-    CREATE_GROUP = "Создать группу 👥"
-    EDIT_SCHEDULE = "Редактировать расписание 🗓️"
+    CREATE_GROUP = "👥 Создать группу"
+    EDIT_SCHEDULE = "🗓️ Редактировать расписание"
 
     CHOOSE_FACULTY = "Выбрать факультет"
 
-    SCHEDULE = "Расписание 🗓"
+    SCHEDULE = "🗓 Расписание"
     TODAY_SCHEDULE = "На сегодня"
     WEEK_SCHEDULE = "На неделю"
 
-    SUBSCRIBE = "Подписаться на группу 🔔"
-    UNSUBSCRIBE = "Отписаться 🔕"
+    MY_PROFILE = "👤 Мой профиль"
 
-    MY_GROUP = "Моя группа 🫂"
-    BACK_TO_GROUP_CHOICE = "Вернуться к выбору группы 🔙"
+    SUBSCRIBE = "🔔 Подписаться на группу"
+    UNSUBSCRIBE = "🔕 Отписаться"
+
+    MY_GROUP = "🫂 Моя группа"
+    BACK_TO_GROUP_CHOICE = "🔙 Вернуться к выбору группы"
 
 class CallbackData:
     STUDENT_CALLBACK = "student"

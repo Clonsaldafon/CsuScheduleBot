@@ -34,7 +34,7 @@ async def student_handler(call: CallbackQuery, state: FSMContext):
 
             is_subscribed = await redis_client.get(f"subscribed:{call.message.chat.id}")
             if is_subscribed is None:
-                await call.message.answer(text=STUDENT_SIGNED_UP, reply_markup=choose_faculty_kb())
+                await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=choose_faculty_kb())
                 await state.clear()
                 return
 

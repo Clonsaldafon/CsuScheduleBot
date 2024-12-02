@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="" />
+    <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/handlers/student.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/consts/kb.py" beforeDir="false" afterPath="$PROJECT_DIR$/consts/kb.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/keyboards/reply.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/reply.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/services/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/services/user.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -39,7 +47,7 @@
     "Python.main.executor": "Run",
     "Python.schedule.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "features/auth",
+    "git-widget-placeholder": "develop",
     "last_opened_file_path": "/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot",
     "settings.editor.selected.configurable": "editor.preferences.fonts.default"
   }
