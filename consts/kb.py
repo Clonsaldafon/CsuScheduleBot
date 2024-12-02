@@ -13,8 +13,9 @@ class ButtonText:
 
     CHOOSE_FACULTY = "Выбрать факультет"
 
-    TODAY_SCHEDULE = "Расписание на сегодня 🗓"
-    WEEK_SCHEDULE = "Расписание на неделю 🗓"
+    SCHEDULE = "Расписание 🗓"
+    TODAY_SCHEDULE = "На сегодня"
+    WEEK_SCHEDULE = "На неделю"
 
     SUBSCRIBE = "Подписаться на группу 🔔"
     UNSUBSCRIBE = "Отписаться 🔕"
@@ -30,3 +31,6 @@ class CallbackData:
     LOG_IN_CALLBACK = "login"
 
     BACK_CALLBACK = "back"
+
+    TODAY_CALLBACK = "today"
+    WEEK_CALLBACK = "week"

@@ -47,3 +47,9 @@ def all_groups_kb(groups: dict):
         builder.add(InlineKeyboardButton(text=short_name, callback_data=str(groups[short_name])))
     builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
     return builder.adjust(1).as_markup(resize_keyboard=True)
+
+def schedule_types_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.TODAY_SCHEDULE, callback_data=CallbackData.TODAY_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.WEEK_SCHEDULE, callback_data=CallbackData.WEEK_CALLBACK))
+    return builder.adjust(2).as_markup(resize_keyboard=True)
