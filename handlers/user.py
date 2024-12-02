@@ -12,7 +12,7 @@ from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
 from keyboards.inline import auth_kb, roles_kb
-from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, subscribed_kb, no_subscribed_kb
+from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, joined_kb, no_joined_kb
 from services.user import UserService
 from states.admin import AdminSignUp, AdminLogIn
 from states.student import StudentSignUp, StudentLogIn
@@ -32,13 +32,13 @@ async def student_handler(call: CallbackQuery, state: FSMContext):
         if "access_token" in response["data"]:
             await redis_client.set(name=f"chat_id:{call.message.chat.id}", value=str(response["data"]["access_token"]))
 
-            is_subscribed = await redis_client.get(f"subscribed:{call.message.chat.id}")
-            if is_subscribed is None:
+            is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
+            if is_joined is None:
                 await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=choose_faculty_kb())
                 await state.clear()
                 return
 
-            kb = subscribed_kb if (is_subscribed == "true") else no_subscribed_kb
+            kb = joined_kb if (is_joined == "true") else no_joined_kb
             await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=kb())
             await state.clear()
         else:

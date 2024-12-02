@@ -18,12 +18,18 @@ class ButtonText:
     WEEK_SCHEDULE = "На неделю"
 
     MY_PROFILE = "👤 Мой профиль"
+    EDIT_FULL_NAME = "Редактировать ФИО"
+    EDIT_NOTIFICATIONS = "Уведомления 📣"
 
-    SUBSCRIBE = "🔔 Подписаться на группу"
-    UNSUBSCRIBE = "🔕 Отписаться"
+    JOIN_TO_GROUP = "Вступить в группу"
+    LEAVE_GROUP = "Покинуть группу"
 
     MY_GROUP = "🫂 Моя группа"
     BACK_TO_GROUP_CHOICE = "🔙 Вернуться к выбору группы"
+
+    ENABLE_NOTIFICATIONS = "Включить"
+    DISABLE_NOTIFICATIONS = "Отключить"
+    NOTIFICATIONS_DELAY = "Настроить время"
 
 class CallbackData:
     STUDENT_CALLBACK = "student"
@@ -36,3 +42,11 @@ class CallbackData:
 
     TODAY_CALLBACK = "today"
     WEEK_CALLBACK = "week"
+
+    EDIT_FULL_NAME_CALLBACK = "edit_full_name"
+    EDIT_NOTIFICATIONS_CALLBACK = "edit_notifications"
+
+    ENABLE_NOTIFICATIONS_CALLBACK = "notifications_enable"
+    DISABLE_NOTIFICATIONS_CALLBACK = "notifications_disable"
+    NOTIFICATIONS_DELAY_CALLBACK = "notification_delay"
+

@@ -3,12 +3,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, CHOOSE_YOUR_FACULTY, CHOOSE_YOUR_PROGRAM, \
-    GROUPS_WILL_BE_HERE_SOON, CHOOSE_YOUR_GROUP, NOW_YOU_CAN_VIEW_SCHEDULE_AND_SUBSCRIBE, SOMETHING_WENT_WRONG, \
-    YOU_SUBSCRIBED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_UNSUBSCRIBED_SUCCESSFUL
+    GROUPS_WILL_BE_HERE_SOON, CHOOSE_YOUR_GROUP, NOW_YOU_CAN_VIEW_SCHEDULE, SOMETHING_WENT_WRONG, \
+    YOU_JOINED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_LEAVED_SUCCESSFUL
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.reply import no_subscribed_kb, choose_faculty_kb, subscribed_kb
+from keyboards.reply import no_joined_kb, choose_faculty_kb, joined_kb
 from services.university_structure import UniversityStructureService
 from services.group import GroupService
 from states.group import Group
@@ -119,7 +119,7 @@ async def capture_group(call: CallbackQuery, state: FSMContext):
     await state.update_data(group_id=group_id)
 
     await redis_client.set(name=f"group_id:{call.message.chat.id}", value=str(group_id))
-    await call.message.answer(text=NOW_YOU_CAN_VIEW_SCHEDULE_AND_SUBSCRIBE, reply_markup=no_subscribed_kb())
+    await call.message.answer(text=NOW_YOU_CAN_VIEW_SCHEDULE, reply_markup=no_joined_kb())
     await state.clear()
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Group.group_id)
@@ -146,13 +146,13 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
     except Exception as e:
         print(e)
 
-@group_router.message(F.text == ButtonText.SUBSCRIBE)
+@group_router.message(F.text == ButtonText.JOIN_TO_GROUP)
 async def group_join_handler(msg: Message):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         group_id = await redis_client.get(f"group_id:{msg.chat.id}")
 
-        response = await group_service.subscribe(token=token, group_id=group_id)
+        response = await group_service.join(token=token, group_id=group_id)
 
         if "error" in response["data"]:
             match response["data"]["error"]:
@@ -160,12 +160,12 @@ async def group_join_handler(msg: Message):
                     await msg.delete_reply_markup()
                     await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
                 case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=no_subscribed_kb())
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=no_joined_kb())
         else:
-            await redis_client.set(name=f"subscribed:{msg.chat.id}", value="true")
+            await redis_client.set(name=f"joined:{msg.chat.id}", value="true")
             await msg.answer(
-                text=YOU_SUBSCRIBED_SUCCESSFUL,
-                reply_markup=subscribed_kb()
+                text=YOU_JOINED_SUCCESSFUL,
+                reply_markup=joined_kb()
             )
     except Exception as e:
         print(e)
@@ -174,8 +174,8 @@ async def group_join_handler(msg: Message):
 async def my_group_handler(msg: Message):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{msg.chat.id}")
-        kb = subscribed_kb if (is_subscribed == "true") else no_subscribed_kb
+        is_joined = await redis_client.get(f"joined:{msg.chat.id}")
+        kb = joined_kb if (is_joined == "true") else no_joined_kb
 
         response = await group_service.get_my(token)
 
@@ -201,18 +201,18 @@ async def back_group_handler(msg: Message, state: FSMContext):
     await msg.answer(text=YOU_CAN_FIND_GROUP_AGAIN, reply_markup=choose_faculty_kb())
     await state.set_state(Group.faculty)
 
-@group_router.message(F.text == ButtonText.UNSUBSCRIBE)
+@group_router.message(F.text == ButtonText.LEAVE_GROUP)
 async def leave_group_handler(msg: Message):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        response = await group_service.unsubscribe(token)
+        response = await group_service.leave(token)
 
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
                     await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
         else:
-            await redis_client.set(name=f"subscribed:{msg.chat.id}", value="false")
-            await msg.answer(text=YOU_UNSUBSCRIBED_SUCCESSFUL, reply_markup=no_subscribed_kb())
+            await redis_client.set(name=f"joined:{msg.chat.id}", value="false")
+            await msg.answer(text=YOU_LEAVED_SUCCESSFUL, reply_markup=no_joined_kb())
     except Exception as e:
         print(e)
