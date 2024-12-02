@@ -9,7 +9,7 @@ from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
 from keyboards.inline import auth_kb, schedule_types_kb
-from keyboards.reply import no_subscribed_kb, subscribed_kb
+from keyboards.reply import no_joined_kb, joined_kb
 from services.schedule import ScheduleService
 
 schedule_router = Router()
@@ -24,8 +24,8 @@ async def today_schedule_handler(call: CallbackQuery):
     try:
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         group_id = await redis_client.get(f"group_id:{call.message.chat.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{call.message.chat.id}")
-        kb = subscribed_kb if (is_subscribed == "true") else no_subscribed_kb
+        is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
+        kb = joined_kb if (is_joined == "true") else no_joined_kb
 
         response = await schedule_service.get_for_today(token=token, group_id=group_id)
 
@@ -57,8 +57,8 @@ async def today_schedule_handler(call: CallbackQuery):
     try:
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
         group_id = await redis_client.get(f"group_id:{call.message.chat.id}")
-        is_subscribed = await redis_client.get(f"subscribed:{call.message.chat.id}")
-        kb = subscribed_kb if (is_subscribed == "true") else no_subscribed_kb
+        is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
+        kb = joined_kb if (is_joined == "true") else no_joined_kb
 
         response = await schedule_service.get_for_week(token=token, group_id=group_id)
 
