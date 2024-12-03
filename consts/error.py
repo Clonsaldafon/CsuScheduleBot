@@ -7,6 +7,8 @@ class ErrorMessage:
     USER_ALREADY_EXISTS = "user already exists"
     USER_NOT_FOUND = "user not found"
 
-    SIGN_UP_EMAIL_VALIDATION = "Key: 'SignUpRequest.Email' Error:Field validation"\
+    SIGN_UP_EMAIL_VALIDATION = "Key: 'SignUpRequest.Email' Error:Field validation" \
                                "for 'Email' failed on the 'email' tag"
+    LOG_IN_EMAIL_VALIDATION = "Key: 'LogInRequest.Email' Error:Field validation "\
+                              "for 'Email' failed on the 'email' tag"
     WRONG_PASSWORD = "wrong password"

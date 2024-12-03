@@ -29,7 +29,9 @@ async def choose_faculty_handler(msg: Message, state: FSMContext):
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
                     await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
-                    await state.clear()
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            await state.clear()
         else:
             faculties = dict()
             for faculty in response["data"]:
@@ -53,7 +55,9 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
                     await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
-                    await state.clear()
+                case _:
+                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            await state.clear()
         else:
             programs = list()
             for program in response["data"]:
@@ -81,7 +85,9 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
                     await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
-                    await state.clear()
+                case _:
+                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            await state.clear()
         else:
             groups = dict()
             for group in response["data"]:
@@ -101,8 +107,10 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
-                    await state.clear()
+                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                case _:
+                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            await state.clear()
         else:
             faculties = dict()
             for faculty in response["data"]:
@@ -134,8 +142,10 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
-                    await state.clear()
+                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                case _:
+                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            await state.clear()
         else:
             programs = list()
             for program in response["data"]:

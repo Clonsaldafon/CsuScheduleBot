@@ -162,7 +162,7 @@ async def capture_admin_password_login(msg: Message, state: FSMContext):
             await state.clear()
         else:
             match response["data"]["error"]:
-                case ErrorMessage.SIGN_UP_EMAIL_VALIDATION:
+                case ErrorMessage.LOG_IN_EMAIL_VALIDATION:
                     await msg.answer(text=ADMIN_EMAIL_VALIDATION, reply_markup=to_start_kb())
                     await state.set_state(AdminLogIn.email)
                 case ErrorMessage.USER_NOT_FOUND:
