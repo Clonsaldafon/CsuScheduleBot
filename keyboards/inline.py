@@ -54,7 +54,8 @@ def schedule_types_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(text=ButtonText.TODAY_SCHEDULE, callback_data=CallbackData.TODAY_CALLBACK))
     builder.add(InlineKeyboardButton(text=ButtonText.WEEK_SCHEDULE, callback_data=CallbackData.WEEK_CALLBACK))
-    return builder.adjust(2).as_markup(resize_keyboard=True)
+    builder.add(InlineKeyboardButton(text=ButtonText.NEXT_WEEK_SCHEDULE, callback_data=CallbackData.NEXT_WEEK_CALLBACK))
+    return builder.adjust(2, 1).as_markup(resize_keyboard=True)
 
 def profile_kb():
     builder = InlineKeyboardBuilder()

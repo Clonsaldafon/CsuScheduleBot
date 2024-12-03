@@ -15,7 +15,8 @@ class ButtonText:
 
     SCHEDULE = "🗓 Расписание"
     TODAY_SCHEDULE = "На сегодня"
-    WEEK_SCHEDULE = "На неделю"
+    WEEK_SCHEDULE = "На эту неделю"
+    NEXT_WEEK_SCHEDULE = "На следующую неделю"
 
     MY_PROFILE = "👤 Мой профиль"
     EDIT_FULL_NAME = "Редактировать ФИО"
@@ -42,6 +43,7 @@ class CallbackData:
 
     TODAY_CALLBACK = "today"
     WEEK_CALLBACK = "week"
+    NEXT_WEEK_CALLBACK = "next_week"
 
     EDIT_FULL_NAME_CALLBACK = "edit_full_name"
     EDIT_NOTIFICATIONS_CALLBACK = "edit_notifications"
