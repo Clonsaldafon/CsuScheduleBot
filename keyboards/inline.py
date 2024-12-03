@@ -57,16 +57,17 @@ def schedule_types_kb():
     builder.add(InlineKeyboardButton(text=ButtonText.NEXT_WEEK_SCHEDULE, callback_data=CallbackData.NEXT_WEEK_CALLBACK))
     return builder.adjust(2, 1).as_markup(resize_keyboard=True)
 
-def profile_kb():
+def profile_kb(is_joined: str):
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
         text=ButtonText.EDIT_FULL_NAME,
         callback_data=CallbackData.EDIT_FULL_NAME_CALLBACK)
     )
-    builder.add(InlineKeyboardButton(
-        text=ButtonText.EDIT_NOTIFICATIONS,
-        callback_data=CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
-    )
+    if is_joined == "true":
+        builder.add(InlineKeyboardButton(
+            text=ButtonText.EDIT_NOTIFICATIONS,
+            callback_data=CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
+        )
     return builder.adjust(1).as_markup(resize_keyboard=True)
 
 def notifications_kb(enabled: bool):

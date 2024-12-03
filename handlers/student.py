@@ -23,6 +23,7 @@ is_notifications_enabled = False
 async def my_profile_handler(msg: Message):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
+        is_joined = await redis_client.get(f"joined:{msg.chat.id}")
         response = await user_service.who(token)
 
         if "error" in response["data"]:
@@ -40,7 +41,7 @@ async def my_profile_handler(msg: Message):
             if is_notifications_enabled:
                 answer += f"Уведомлять за <b>{response["data"]["notification_delay"]} мин.</b> до пары"
 
-            await msg.answer(text=answer, reply_markup=profile_kb())
+            await msg.answer(text=answer, reply_markup=profile_kb(is_joined))
     except Exception as e:
         print(e)
 
