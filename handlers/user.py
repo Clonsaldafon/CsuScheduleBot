@@ -1,13 +1,13 @@
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUDENT_SIGNED_UP, \
     SOMETHING_WITH_FULLNAME_VALIDATION, STUDENT_IS_ALREADY_SIGNED_UP, STUDENT_NO_SIGNED_UP, SOMETHING_WENT_WRONG, \
     ADMIN_START, ENTER_YOUR_EMAIL, INVENT_PASSWORD, ADMIN_SIGNED_UP_SUCCESS, ADMIN_EMAIL_VALIDATION, \
     ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, ADMIN_PASSWORD_IS_SHORT, ENTER_PASSWORD, ADMIN_LOGGED_IN_SUCCESS, \
-    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN
+    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN, CHOOSE_YOUR_ROLE_AGAIN
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
@@ -76,7 +76,8 @@ async def capture_student_fullname_signup(msg: Message, state: FSMContext):
                                 await msg.answer(text=STUDENT_NO_SIGNED_UP, reply_markup=None)
                                 await state.set_state(StudentSignUp.fullname)
                 case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                     await state.clear()
     except Exception as e:
         print(e)
@@ -133,7 +134,8 @@ async def capture_admin_password_signup(msg: Message, state: FSMContext):
                         await msg.answer(text=ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, reply_markup=to_start_kb())
                         await state.set_state(AdminSignUp.email)
                     case _:
-                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
+                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                        await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                         await state.clear()
         except Exception as e:
             print(e)
@@ -172,7 +174,8 @@ async def capture_admin_password_login(msg: Message, state: FSMContext):
                     await msg.answer(text=WRONG_PASSWORD, reply_markup=to_start_kb())
                     await state.set_state(AdminLogIn.password)
                 case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                     await state.clear()
     except Exception as e:
         print(e)

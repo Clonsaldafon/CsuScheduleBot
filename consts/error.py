@@ -7,6 +7,9 @@ class ErrorMessage:
     USER_ALREADY_EXISTS = "user already exists"
     USER_NOT_FOUND = "user not found"
 
+    GROUP_ALREADY_EXISTS = "group already exists with this shortname"
+    YOU_ARE_ALREADY_IN_GROUP = "you are already in a group"
+
     SIGN_UP_EMAIL_VALIDATION = "Key: 'SignUpRequest.Email' Error:Field validation" \
                                "for 'Email' failed on the 'email' tag"
     LOG_IN_EMAIL_VALIDATION = "Key: 'LogInRequest.Email' Error:Field validation "\
