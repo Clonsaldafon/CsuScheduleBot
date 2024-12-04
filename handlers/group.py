@@ -1,10 +1,11 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, CHOOSE_YOUR_FACULTY, CHOOSE_YOUR_PROGRAM, \
     GROUPS_WILL_BE_HERE_SOON, CHOOSE_YOUR_GROUP, NOW_YOU_CAN_VIEW_SCHEDULE, SOMETHING_WENT_WRONG, \
-    YOU_JOINED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_LEAVED_SUCCESSFUL
+    YOU_JOINED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_LEAVED_SUCCESSFUL, CHOOSE_YOUR_ROLE_AGAIN, \
+    YOU_ARE_ALREADY_JOINED
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
@@ -12,7 +13,7 @@ from keyboards.reply import no_joined_kb, choose_faculty_kb, joined_kb
 from services.university_structure import UniversityStructureService
 from services.group import GroupService
 from states.group import Group
-from keyboards.inline import auth_kb, all_groups_kb, faculties_with_id_kb, programs_kb
+from keyboards.inline import auth_kb, all_groups_kb, faculties_with_id_kb, programs_kb, roles_kb
 
 group_router = Router()
 group_service = GroupService()
@@ -28,9 +29,11 @@ async def choose_faculty_handler(msg: Message, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                 case _:
                     await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+
             await state.clear()
         else:
             faculties = dict()
@@ -54,9 +57,10 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                 case _:
-                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
             await state.clear()
         else:
             programs = list()
@@ -84,9 +88,10 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
         elif "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                 case _:
-                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
             await state.clear()
         else:
             groups = dict()
@@ -107,9 +112,10 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                 case _:
-                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
             await state.clear()
         else:
             faculties = dict()
@@ -142,9 +148,10 @@ async def back_group_handler(call: CallbackQuery, state: FSMContext):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                 case _:
-                    await call.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
             await state.clear()
         else:
             programs = list()
@@ -167,8 +174,10 @@ async def group_join_handler(msg: Message):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.delete_reply_markup()
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case ErrorMessage.YOU_ARE_ALREADY_IN_GROUP:
+                    await msg.answer(text=YOU_ARE_ALREADY_JOINED, reply_markup=joined_kb())
                 case _:
                     await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=no_joined_kb())
         else:
@@ -192,7 +201,10 @@ async def my_group_handler(msg: Message):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
         elif "group_id" in response["data"]:
             answer = group_service.get_info(response["data"])
 
@@ -220,7 +232,10 @@ async def leave_group_handler(msg: Message):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
         else:
             await redis_client.set(name=f"joined:{msg.chat.id}", value="false")
             await msg.answer(text=YOU_LEAVED_SUCCESSFUL, reply_markup=no_joined_kb())

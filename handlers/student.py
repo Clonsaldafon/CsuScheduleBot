@@ -1,13 +1,13 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, DATA_UPDATED_SUCCESSFUL, ENTER_NEW_FULL_NAME, CHOOSE_SETTINGS, \
-    CHOOSE_NOTIFICATION_DELAY
+    CHOOSE_NOTIFICATION_DELAY, SOMETHING_WENT_WRONG, CHOOSE_YOUR_ROLE_AGAIN
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.inline import auth_kb, profile_kb, notifications_kb, notification_delay_kb
+from keyboards.inline import auth_kb, profile_kb, notifications_kb, notification_delay_kb, roles_kb
 from keyboards.reply import joined_kb, no_joined_kb
 from services.student import StudentService
 from services.user import UserService
@@ -29,7 +29,10 @@ async def my_profile_handler(msg: Message):
         if "error" in response["data"]:
             match response["data"]["error"]:
                 case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=profile_kb(is_joined))
         else:
             global is_notifications_enabled
             is_notifications_enabled = response["data"]["notifications_enabled"]
@@ -66,7 +69,12 @@ async def capture_new_full_name(msg: Message, state: FSMContext):
             await msg.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
             await state.clear()
         else:
-            pass
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
     except Exception as e:
         print(e)
 
@@ -94,7 +102,12 @@ async def capture_notifications_enabling(call: CallbackQuery):
             else:
                 await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
         else:
-            pass
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
     except Exception as e:
         print(e)
 
@@ -123,6 +136,11 @@ async def capture_edit_notification_delay(call: CallbackQuery):
         if response["status_code"] == 200:
             await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
         else:
-            pass
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
     except Exception as e:
         print(e)
