@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -9,7 +10,7 @@ from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUD
     SOMETHING_WITH_FULLNAME_VALIDATION, STUDENT_IS_ALREADY_SIGNED_UP, STUDENT_NO_SIGNED_UP, SOMETHING_WENT_WRONG, \
     ADMIN_START, ENTER_YOUR_EMAIL, INVENT_PASSWORD, ADMIN_SIGNED_UP_SUCCESS, ADMIN_EMAIL_VALIDATION, \
     ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, ADMIN_PASSWORD_IS_SHORT, ENTER_PASSWORD, ADMIN_LOGGED_IN_SUCCESS, \
-    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN, CHOOSE_YOUR_ROLE_AGAIN
+    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN, CHOOSE_YOUR_ROLE_AGAIN, FEEDBACK_LATER
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
@@ -24,6 +25,8 @@ user_service = UserService()
 
 @user_router.message(Command(START_COMMAND))
 async def start_handler(msg: Message):
+    await redis_client.set(name=f"started_at:{msg.chat.id}", value=str(datetime.now()))
+
     await msg.answer(text=START_ANSWER, reply_markup=roles_kb())
 
 @user_router.callback_query(F.data == CallbackData.STUDENT_CALLBACK)
@@ -191,3 +194,9 @@ async def capture_admin_password_login(msg: Message, state: FSMContext):
                     await state.clear()
     except Exception as e:
         print(e)
+
+@user_router.callback_query(F.data == CallbackData.FEEDBACK_LATER_CALLBACK)
+async def feedback_rejection_handler(call: CallbackQuery):
+    await redis_client.set(name=f"started_at:{call.message.chat.id}", value=str(datetime.now()))
+
+    await call.message.answer(text=FEEDBACK_LATER, reply_markup=None)

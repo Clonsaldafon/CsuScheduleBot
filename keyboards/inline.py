@@ -99,3 +99,19 @@ def notification_delay_kb():
             callback_data=f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_{delay}")
         )
     return builder.adjust(3).as_markup(resize_keyboard=True)
+
+def feedback_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text=ButtonText.FEEDBACK,
+        url="https://www.google.com/search?q=cute+cats&sca_esv=34e05643fe6f2863&udm=2&biw=1920&bih=980&sxsrf=ADLYWIL"\
+            "fHgZO3wL0csV5lxD9eMzprGzPMw%3A1733426899609&ei=0_5RZ7b1JNn9wPAP-unM4AY&ved=0ahUKEwj2quG0rpGKAxXZPhAIHfo"\
+            "0E2wQ4dUDCBE&uact=5&oq=cute+cats&gs_lp=EgNpbWciCWN1dGUgY2F0czIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAA"\
+            "GIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIuQVQ4QRY4QRwAXgAkAEAmAFToAGlAaoBATK4AQPIAQD4AQGYAgK"\
+            "gAljCAgoQABiABBhDGIoFwgIGEAAYBxgemAMAiAYBkgcBMqAHvQo&sclient=img")
+    )
+    builder.add(InlineKeyboardButton(
+        text=ButtonText.FEEDBACK_LATER,
+        callback_data=CallbackData.FEEDBACK_LATER_CALLBACK)
+    )
+    return builder.adjust(1).as_markup(resize_keyboard=True)

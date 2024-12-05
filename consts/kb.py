@@ -32,6 +32,9 @@ class ButtonText:
     DISABLE_NOTIFICATIONS = "Отключить"
     NOTIFICATIONS_DELAY = "Настроить время"
 
+    FEEDBACK = "⭐ Пройти опрос ⭐"
+    FEEDBACK_LATER = "⏰ Напомнить позже"
+
 class CallbackData:
     STUDENT_CALLBACK = "student"
     ADMIN_CALLBACK = "admin"
@@ -52,3 +55,4 @@ class CallbackData:
     DISABLE_NOTIFICATIONS_CALLBACK = "notifications_disable"
     NOTIFICATIONS_DELAY_CALLBACK = "notification_delay"
 
+    FEEDBACK_LATER_CALLBACK = "feedback_later"
