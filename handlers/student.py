@@ -3,10 +3,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, DATA_UPDATED_SUCCESSFUL, ENTER_NEW_FULL_NAME, CHOOSE_SETTINGS, \
-    CHOOSE_NOTIFICATION_DELAY, SOMETHING_WENT_WRONG, CHOOSE_YOUR_ROLE_AGAIN
+    CHOOSE_NOTIFICATION_DELAY, SOMETHING_WENT_WRONG, CHOOSE_YOUR_ROLE_AGAIN, SOMETHING_WITH_FULLNAME_VALIDATION
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
+from handlers.user import is_fullname_valid
 from keyboards.inline import auth_kb, profile_kb, notifications_kb, notification_delay_kb, roles_kb
 from keyboards.reply import joined_kb, no_joined_kb
 from services.student import StudentService
@@ -59,22 +60,26 @@ async def capture_new_full_name(msg: Message, state: FSMContext):
     await state.update_data(fullname=full_name)
 
     try:
-        token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        is_joined = await redis_client.get(f"joined:{msg.chat.id}")
-        kb = joined_kb if (is_joined == "true") else no_joined_kb
+        if is_fullname_valid(full_name):
+            token = await redis_client.get(f"chat_id:{msg.chat.id}")
+            is_joined = await redis_client.get(f"joined:{msg.chat.id}")
+            kb = joined_kb if (is_joined == "true") else no_joined_kb
 
-        response = await student_service.update_full_name(token, full_name)
+            response = await student_service.update_full_name(token, full_name)
 
-        if response["status_code"] == 200:
-            await msg.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
-            await state.clear()
+            if response["status_code"] == 200:
+                await msg.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
+                await state.clear()
+            else:
+                match response["data"]["error"]:
+                    case ErrorMessage.TOKEN_IS_EXPIRED:
+                        await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                        await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                    case _:
+                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
         else:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
+            await msg.answer(text=SOMETHING_WITH_FULLNAME_VALIDATION, reply_markup=None)
+            await state.set_state(StudentEditProfile.fullname)
     except Exception as e:
         print(e)
 
