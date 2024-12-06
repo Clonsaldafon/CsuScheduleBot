@@ -21,8 +21,8 @@ async def survey_check_loop(bot):
         for key in started_keys:
             started_at_str = await redis_client.get(key)
             started_at = datetime.now().strptime(started_at_str, "%Y-%m-%d %H:%M:%S.%f")
-            if datetime.now() - started_at >= timedelta(seconds=30):
+            if datetime.now() - started_at >= timedelta(days=1):
                 chat_id = int(key.split(":")[1])
                 await send_survey_invitation(bot, chat_id)
                 await redis_client.delete(key)
-        await asyncio.sleep(30)
+        await asyncio.sleep(43200)
