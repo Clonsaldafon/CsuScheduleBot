@@ -99,3 +99,12 @@ def notification_delay_kb():
             callback_data=f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_{delay}")
         )
     return builder.adjust(3).as_markup(resize_keyboard=True)
+
+def feedback_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.FEEDBACK, url="https://forms.gle/cSMLUNV8CPjhkGqX7"))
+    builder.add(InlineKeyboardButton(
+        text=ButtonText.FEEDBACK_LATER,
+        callback_data=CallbackData.FEEDBACK_LATER_CALLBACK)
+    )
+    return builder.adjust(1).as_markup(resize_keyboard=True)
