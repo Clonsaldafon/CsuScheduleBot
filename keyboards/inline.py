@@ -68,6 +68,7 @@ def profile_kb(is_joined: str):
             text=ButtonText.EDIT_NOTIFICATIONS,
             callback_data=CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
         )
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
     return builder.adjust(1).as_markup(resize_keyboard=True)
 
 def notifications_kb(enabled: bool):
@@ -92,7 +93,7 @@ def notifications_kb(enabled: bool):
 
 def notification_delay_kb():
     builder = InlineKeyboardBuilder()
-    delays = [10, 20, 30, 40, 50, 60]
+    delays = [5, 10, 20, 30, 45, 60]
     for delay in delays:
         builder.add(InlineKeyboardButton(
             text=f"{delay} мин.",
