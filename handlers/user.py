@@ -14,7 +14,7 @@ from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUD
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.inline import auth_kb, roles_kb, faculties_with_id_kb
+from keyboards.inline import auth_kb, roles_kb
 from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, joined_kb, no_joined_kb
 from services.user import UserService
 from states.admin import AdminSignUp, AdminLogIn
@@ -103,8 +103,29 @@ async def capture_student_fullname_login(msg: Message, state: FSMContext):
     pass
 
 @user_router.callback_query(F.data == CallbackData.ADMIN_CALLBACK)
-async def admin_handler(call: CallbackQuery):
-    await call.message.edit_text(text=ADMIN_START, reply_markup=auth_kb())
+async def admin_handler(call: CallbackQuery, state: FSMContext):
+    # await call.message.edit_text(text=ADMIN_START, reply_markup=auth_kb())
+    await call.message.answer(text="🤖 Куда собрался?🤨\nТебе сюда нелья! Заходи, как студент")
+    try:
+        response = await user_service.log_in_student(call.message.chat.id)
+
+        if "access_token" in response["data"]:
+            await redis_client.set(name=f"chat_id:{call.message.chat.id}", value=str(response["data"]["access_token"]))
+
+            is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
+            if is_joined is None:
+                await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=choose_faculty_kb())
+                await state.clear()
+                return
+
+            kb = joined_kb if (is_joined == "true") else no_joined_kb
+            await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=kb())
+            await state.clear()
+        else:
+            await call.message.answer(text=STUDENT_SIGN_UP, reply_markup=None)
+            await state.set_state(StudentSignUp.fullname)
+    except Exception as e:
+        print(e)
 
 @user_router.callback_query(F.data.in_({CallbackData.LOG_IN_CALLBACK, CallbackData.SIGN_UP_CALLBACK}))
 async def admin_auth_handler(call: CallbackQuery, state: FSMContext):

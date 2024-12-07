@@ -91,7 +91,10 @@ async def capture_program(call: CallbackQuery, state: FSMContext):
         response = await group_service.get_groups(token, program)
 
         if response["data"] is None:
-            await call.message.answer(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=choose_faculty_kb())
+            if await redis_client.get(f"another_group:{call.message.chat.id}") == "True":
+                await call.message.answer(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=joined_kb())
+            else:
+                await call.message.answer(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=choose_faculty_kb())
             await state.clear()
         elif "error" in response["data"]:
             match response["data"]["error"]:
