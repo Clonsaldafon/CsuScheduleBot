@@ -22,3 +22,9 @@ class Service:
             status_code = response.status
             response_data = await response.json()
             return {"status_code": status_code, "data": response_data}
+
+    async def patch(self, session, url, headers, body):
+        async with session.patch(self.__BASE_URL + url, data=json.dumps(body), headers=headers) as response:
+            status_code = response.status
+            response_data = await response.json()
+            return {"status_code": status_code, "data": response_data}

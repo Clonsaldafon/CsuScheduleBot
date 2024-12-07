@@ -2,7 +2,6 @@ from aiohttp import ClientSession
 
 from services.service import Service
 
-
 class UserService(Service):
     def __init__(self):
         super().__init__()
@@ -11,11 +10,12 @@ class UserService(Service):
             "Content-Type": "application/json"
         }
 
-    async def sign_up_student(self, fullname, telegram):
+    async def sign_up_student(self, fullname, telegram, username):
         async with ClientSession() as session:
             body = {
                 "full_name": fullname,
-                "telegram_chat_id": telegram
+                "telegram_chat_id": telegram,
+                "telegram_username": username
             }
 
             return await self.post(
@@ -64,4 +64,17 @@ class UserService(Service):
                 url=f"{self.__url}/login",
                 headers=self.__headers,
                 body=body
+            )
+
+    async def who(self, token):
+        async with ClientSession() as session:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"
+            }
+
+            return await self.get(
+                session=session,
+                url=f"{self.__url}/who",
+                headers=headers
             )

@@ -1,3 +1,5 @@
+from cgitb import reset
+
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -46,4 +48,64 @@ def all_groups_kb(groups: dict):
     for short_name in groups:
         builder.add(InlineKeyboardButton(text=short_name, callback_data=str(groups[short_name])))
     builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1).as_markup(resize_keyboard=True)
+
+def schedule_types_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.TODAY_SCHEDULE, callback_data=CallbackData.TODAY_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.WEEK_SCHEDULE, callback_data=CallbackData.WEEK_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.NEXT_WEEK_SCHEDULE, callback_data=CallbackData.NEXT_WEEK_CALLBACK))
+    return builder.adjust(2, 1).as_markup(resize_keyboard=True)
+
+def profile_kb(is_joined: str):
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text=ButtonText.EDIT_FULL_NAME,
+        callback_data=CallbackData.EDIT_FULL_NAME_CALLBACK)
+    )
+    if is_joined == "true":
+        builder.add(InlineKeyboardButton(
+            text=ButtonText.EDIT_NOTIFICATIONS,
+            callback_data=CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
+        )
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1).as_markup(resize_keyboard=True)
+
+def notifications_kb(enabled: bool):
+    builder = InlineKeyboardBuilder()
+
+    if enabled:
+        builder.add(InlineKeyboardButton(
+            text=ButtonText.DISABLE_NOTIFICATIONS,
+            callback_data=CallbackData.DISABLE_NOTIFICATIONS_CALLBACK)
+        )
+        builder.add(InlineKeyboardButton(
+            text=ButtonText.NOTIFICATIONS_DELAY,
+            callback_data=CallbackData.NOTIFICATIONS_DELAY_CALLBACK)
+        )
+    else:
+        builder.add(InlineKeyboardButton(
+            text=ButtonText.ENABLE_NOTIFICATIONS,
+            callback_data=CallbackData.ENABLE_NOTIFICATIONS_CALLBACK)
+        )
+
+    return builder.adjust(1).as_markup(resize_keyboard=True)
+
+def notification_delay_kb():
+    builder = InlineKeyboardBuilder()
+    delays = [5, 10, 20, 30, 45, 60]
+    for delay in delays:
+        builder.add(InlineKeyboardButton(
+            text=f"{delay} мин.",
+            callback_data=f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_{delay}")
+        )
+    return builder.adjust(3).as_markup(resize_keyboard=True)
+
+def feedback_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.FEEDBACK, url="https://forms.gle/cSMLUNV8CPjhkGqX7"))
+    builder.add(InlineKeyboardButton(
+        text=ButtonText.FEEDBACK_LATER,
+        callback_data=CallbackData.FEEDBACK_LATER_CALLBACK)
+    )
     return builder.adjust(1).as_markup(resize_keyboard=True)

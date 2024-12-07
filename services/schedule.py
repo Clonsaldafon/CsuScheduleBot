@@ -21,7 +21,7 @@ class ScheduleService(Service):
                 f"🔢 {room}, {subject["building"]["name"]} ({subject["building"]["address"]})\n"
                 f"⏰ {start_time} - {end_time}\n\n")
 
-    async def get_for_today(self, token, group_id):
+    async def get_schedule(self, token, group_id, is_even):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
@@ -30,21 +30,6 @@ class ScheduleService(Service):
 
             return await self.get(
                 session=session,
-                url=f"{self.__url}/{group_id}/schedule",
-                headers=headers
-            )
-
-    async def get_for_week(self, token, group_id):
-        async with ClientSession() as session:
-            is_even = str((datetime.today().isocalendar().week + 1) % 2 == 0).lower()
-
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}"
-            }
-
-            return await self.get(
-                session=session,
-                url=f"{self.__url}/{group_id}/schedule?week_even={is_even}",
+                url=f"{self.__url}/{group_id}/schedule?week_even={str(is_even).lower()}",
                 headers=headers
             )
