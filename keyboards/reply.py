@@ -34,4 +34,5 @@ def joined_kb():
     builder.add(KeyboardButton(text=ButtonText.LEAVE_GROUP))
     builder.add(KeyboardButton(text=ButtonText.MY_PROFILE))
     builder.add(KeyboardButton(text=ButtonText.MY_GROUP))
-    return builder.adjust(2).as_markup(resize_keyboard=True, one_time_keyboard=True)
+    builder.add(KeyboardButton(text=ButtonText.ANOTHER_GROUP_SCHEDULE))
+    return builder.adjust(2, 2, 1).as_markup(resize_keyboard=True, one_time_keyboard=True)

@@ -17,6 +17,7 @@ class ButtonText:
     TODAY_SCHEDULE = "На сегодня"
     WEEK_SCHEDULE = "На эту неделю"
     NEXT_WEEK_SCHEDULE = "На следующую неделю"
+    ANOTHER_GROUP_SCHEDULE = "🗓 Расписание другой группы"
 
     MY_PROFILE = "👤 Мой профиль"
     EDIT_FULL_NAME = "Редактировать ФИО"

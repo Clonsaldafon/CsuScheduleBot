@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, CHOOSE_YOUR_FACULTY, CHOOSE_YOUR_PROGRAM, \
     GROUPS_WILL_BE_HERE_SOON, CHOOSE_YOUR_GROUP, NOW_YOU_CAN_VIEW_SCHEDULE, SOMETHING_WENT_WRONG, \
     YOU_JOINED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_LEAVED_SUCCESSFUL, CHOOSE_YOUR_ROLE_AGAIN, \
-    YOU_ARE_ALREADY_JOINED
+    YOU_ARE_ALREADY_JOINED, CHOOSE_SCHEDULE_TYPE
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
@@ -13,15 +13,23 @@ from keyboards.reply import no_joined_kb, choose_faculty_kb, joined_kb
 from services.university_structure import UniversityStructureService
 from services.group import GroupService
 from states.group import Group
-from keyboards.inline import auth_kb, all_groups_kb, faculties_with_id_kb, programs_kb, roles_kb
+from keyboards.inline import all_groups_kb, faculties_with_id_kb, programs_kb, roles_kb, schedule_types_kb
 
 group_router = Router()
 group_service = GroupService()
 university_structure_service = UniversityStructureService()
 all_groups = dict()
 
-@group_router.message(F.text == ButtonText.CHOOSE_FACULTY)
+@group_router.message(F.text.in_({
+    ButtonText.CHOOSE_FACULTY,
+    ButtonText.ANOTHER_GROUP_SCHEDULE
+}))
 async def choose_faculty_handler(msg: Message, state: FSMContext):
+    await redis_client.set(
+        name=f"another_group:{msg.chat.id}",
+        value=str(msg.text == ButtonText.ANOTHER_GROUP_SCHEDULE)
+    )
+
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         response = await university_structure_service.get_faculties(token)
@@ -132,8 +140,14 @@ async def capture_group(call: CallbackQuery, state: FSMContext):
     group_id = call.data
     await state.update_data(group_id=group_id)
 
-    await redis_client.set(name=f"group_id:{call.message.chat.id}", value=str(group_id))
-    await call.message.answer(text=NOW_YOU_CAN_VIEW_SCHEDULE, reply_markup=no_joined_kb())
+    is_another_group = await redis_client.get(name=f"another_group:{call.message.chat.id}")
+    if is_another_group == "True":
+        await redis_client.set(name=f"another_group_id:{call.message.chat.id}", value=str(group_id))
+        await call.message.answer(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_kb())
+    else:
+        await redis_client.set(name=f"group_id:{call.message.chat.id}", value=str(group_id))
+        await call.message.answer(text=NOW_YOU_CAN_VIEW_SCHEDULE, reply_markup=no_joined_kb())
+
     await state.clear()
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Group.group_id)
