@@ -5,7 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ca99f7cf-f400-485c-811c-423b2a980ab8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/database/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/database/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/consts/bot_answer.py" beforeDir="false" afterPath="$PROJECT_DIR$/consts/bot_answer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/consts/kb.py" beforeDir="false" afterPath="$PROJECT_DIR$/consts/kb.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/group.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/schedule.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/keyboards/reply.py" beforeDir="false" afterPath="$PROJECT_DIR$/keyboards/reply.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,10 +43,10 @@
     "Python.group.executor": "Debug",
     "Python.handlers.executor": "Debug",
     "Python.kb.executor": "Debug",
-    "Python.main.executor": "Debug",
+    "Python.main.executor": "Run",
     "Python.schedule.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "develop",
+    "git-widget-placeholder": "hotfix/schedule",
     "last_opened_file_path": "/home/anton-bezmelnitsin/PycharmProjects/CsuScheduleBot",
     "settings.editor.selected.configurable": "editor.preferences.fonts.default"
   }
