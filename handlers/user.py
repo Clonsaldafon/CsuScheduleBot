@@ -1,17 +1,20 @@
+import re
+from datetime import datetime
+
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUDENT_SIGNED_UP, \
     SOMETHING_WITH_FULLNAME_VALIDATION, STUDENT_IS_ALREADY_SIGNED_UP, STUDENT_NO_SIGNED_UP, SOMETHING_WENT_WRONG, \
     ADMIN_START, ENTER_YOUR_EMAIL, INVENT_PASSWORD, ADMIN_SIGNED_UP_SUCCESS, ADMIN_EMAIL_VALIDATION, \
     ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, ADMIN_PASSWORD_IS_SHORT, ENTER_PASSWORD, ADMIN_LOGGED_IN_SUCCESS, \
-    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN
+    ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN, CHOOSE_YOUR_ROLE_AGAIN, FEEDBACK_LATER
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.inline import auth_kb, roles_kb
+from keyboards.inline import auth_kb, roles_kb, faculties_with_id_kb
 from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, joined_kb, no_joined_kb
 from services.user import UserService
 from states.admin import AdminSignUp, AdminLogIn
@@ -22,6 +25,8 @@ user_service = UserService()
 
 @user_router.message(Command(START_COMMAND))
 async def start_handler(msg: Message):
+    await redis_client.set(name=f"started_at:{msg.chat.id}", value=str(datetime.now()))
+
     await msg.answer(text=START_ANSWER, reply_markup=roles_kb())
 
 @user_router.callback_query(F.data == CallbackData.STUDENT_CALLBACK)
@@ -55,31 +60,42 @@ async def capture_student_fullname_signup(msg: Message, state: FSMContext):
     await state.update_data(fullname=fullname)
 
     try:
-        response = await user_service.sign_up_student(fullname=fullname, telegram=telegram, username=username)
-        if response["status_code"] == 201:
-            await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["data"]["access_token"]))
-            await msg.answer(text=STUDENT_SIGNED_UP, reply_markup=choose_faculty_kb())
-            await state.clear()
-        else:
-            match response["data"]["error"]:
-                case ErrorMessage.SIGN_UP_FULLNAME_VALIDATION:
-                    await msg.answer(text=SOMETHING_WITH_FULLNAME_VALIDATION, reply_markup=None)
-                    await state.set_state(StudentSignUp.fullname)
-                case ErrorMessage.USER_ALREADY_EXISTS:
-                    login_response = await user_service.log_in_student(telegram=telegram)
-                    if login_response["status_code"] == 200:
-                        await msg.answer(text=STUDENT_IS_ALREADY_SIGNED_UP, reply_markup=choose_faculty_kb())
+        if is_fullname_valid(fullname):
+            response = await user_service.sign_up_student(fullname=fullname, telegram=telegram, username=username)
+            if response["status_code"] == 201:
+                await redis_client.set(name=f"chat_id:{msg.chat.id}", value=str(response["data"]["access_token"]))
+                await msg.answer(text=STUDENT_SIGNED_UP, reply_markup=choose_faculty_kb())
+                await state.clear()
+            else:
+                match response["data"]["error"]:
+                    case ErrorMessage.SIGN_UP_FULLNAME_VALIDATION:
+                        await msg.answer(text=SOMETHING_WITH_FULLNAME_VALIDATION, reply_markup=None)
+                        await state.set_state(StudentSignUp.fullname)
+                    case ErrorMessage.USER_ALREADY_EXISTS:
+                        login_response = await user_service.log_in_student(telegram=telegram)
+                        if login_response["status_code"] == 200:
+                            await msg.answer(text=STUDENT_IS_ALREADY_SIGNED_UP, reply_markup=choose_faculty_kb())
+                            await state.clear()
+                        else:
+                            match login_response["data"]["error"]:
+                                case ErrorMessage.USER_NOT_FOUND:
+                                    await msg.answer(text=STUDENT_NO_SIGNED_UP, reply_markup=None)
+                                    await state.set_state(StudentSignUp.fullname)
+                    case _:
+                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                        await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                         await state.clear()
-                    else:
-                        match login_response["data"]["error"]:
-                            case ErrorMessage.USER_NOT_FOUND:
-                                await msg.answer(text=STUDENT_NO_SIGNED_UP, reply_markup=None)
-                                await state.set_state(StudentSignUp.fullname)
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
-                    await state.clear()
+        else:
+            await msg.answer(text=SOMETHING_WITH_FULLNAME_VALIDATION, reply_markup=None)
+            await state.set_state(StudentSignUp.fullname)
     except Exception as e:
         print(e)
+
+def is_fullname_valid(fullname: str) -> bool:
+    pattern = r'^(?:[А-ЯЁ][а-яё]+[-\s]?)*[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+$'
+    if re.match(pattern, fullname):
+        return True
+    return False
 
 @user_router.message(F.text, StudentLogIn.fullname)
 async def capture_student_fullname_login(msg: Message, state: FSMContext):
@@ -133,7 +149,8 @@ async def capture_admin_password_signup(msg: Message, state: FSMContext):
                         await msg.answer(text=ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, reply_markup=to_start_kb())
                         await state.set_state(AdminSignUp.email)
                     case _:
-                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
+                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                        await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                         await state.clear()
         except Exception as e:
             print(e)
@@ -172,7 +189,14 @@ async def capture_admin_password_login(msg: Message, state: FSMContext):
                     await msg.answer(text=WRONG_PASSWORD, reply_markup=to_start_kb())
                     await state.set_state(AdminLogIn.password)
                 case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=roles_kb())
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
                     await state.clear()
     except Exception as e:
         print(e)
+
+@user_router.callback_query(F.data == CallbackData.FEEDBACK_LATER_CALLBACK)
+async def feedback_rejection_handler(call: CallbackQuery):
+    await redis_client.set(name=f"started_at:{call.message.chat.id}", value=str(datetime.now()))
+
+    await call.message.answer(text=FEEDBACK_LATER, reply_markup=None)

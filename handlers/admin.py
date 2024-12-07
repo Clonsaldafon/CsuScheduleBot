@@ -1,15 +1,17 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from consts.bot_answer import SOMETHING_WENT_WRONG, CHOOSE_FACULTY, CHOOSE_PROGRAM, ENTER_SHORT_GROUP_NAME, \
-    IN_DEVELOPING
+    IN_DEVELOPING, SOMETHING_WITH_MY_MEMORY, CHOOSE_YOUR_ROLE_AGAIN, GROUP_WITH_THIS_SHORT_NAME_ALREADY_EXISTS
+from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.inline import faculties_with_id_kb, programs_with_id_kb
+from keyboards.inline import faculties_with_id_kb, programs_with_id_kb, roles_kb
 from keyboards.reply import admin_kb
 from services.admin import AdminService
 from services.university_structure import UniversityStructureService
+from states.group import Group
 from states.university_structure import UniversityStructure
 
 admin_router = Router()
@@ -23,7 +25,12 @@ async def create_group_handler(msg: Message, state: FSMContext):
         response = await university_structure_service.get_faculties(token)
 
         if "error" in response["data"]:
-            await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
             await state.clear()
         else:
             faculties = dict()
@@ -45,7 +52,12 @@ async def capture_faculty(call: CallbackQuery, state: FSMContext):
         response = await university_structure_service.get_programs(token, faculty_id)
 
         if "error" in response["data"]:
-            await call.message.edit_text(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
             await state.clear()
         else:
             programs = dict()
@@ -70,7 +82,12 @@ async def back_program_handler(call: CallbackQuery, state: FSMContext):
         response = await university_structure_service.get_faculties(token)
 
         if "error" in response["data"]:
-            await call.message.edit_text(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
             await state.clear()
         else:
             faculties = dict()
@@ -99,7 +116,15 @@ async def capture_short_name(msg: Message, state: FSMContext):
         )
 
         if "error" in response["data"]:
-            await msg.edit_text(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case ErrorMessage.GROUP_ALREADY_EXISTS:
+                    await msg.answer(text=GROUP_WITH_THIS_SHORT_NAME_ALREADY_EXISTS, reply_markup=None)
+                    await state.set_state(UniversityStructure.short_name)
+                case _:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
             await state.clear()
         else:
             await msg.answer(text=f"Группа {short_name} успешно создана!", reply_markup=admin_kb())
@@ -116,8 +141,13 @@ async def back_short_name_handler(call: CallbackQuery, state: FSMContext):
         response = await university_structure_service.get_programs(token, data.get("faculty_id"))
 
         if "error" in response["data"]:
-            # TODO: make error handling
-            pass
+            match response["data"]["error"]:
+                case ErrorMessage.TOKEN_IS_EXPIRED:
+                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                case _:
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=admin_kb())
+            await state.clear()
         else:
             programs = dict()
             for program in response["data"]:

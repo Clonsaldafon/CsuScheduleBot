@@ -1,14 +1,15 @@
 from datetime import datetime
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, SCHEDULE_NO_EXISTS, NOW_FIRST_WEEK, NOW_SECOND_WEEK, \
-    TODAY_NO_SUBJECTS, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SUNDAY, SATURDAY, CHOOSE_SCHEDULE_TYPE
+    TODAY_NO_SUBJECTS, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SUNDAY, SATURDAY, CHOOSE_SCHEDULE_TYPE, \
+    CHOOSE_YOUR_ROLE_AGAIN, SOMETHING_WENT_WRONG
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.inline import auth_kb, schedule_types_kb
+from keyboards.inline import auth_kb, schedule_types_kb, roles_kb
 from keyboards.reply import no_joined_kb, joined_kb
 from services.schedule import ScheduleService
 
@@ -63,6 +64,7 @@ async def get_schedule(chat_id: int, is_even: bool):
     token = await redis_client.get(f"chat_id:{chat_id}")
     group_id = await redis_client.get(f"group_id:{chat_id}")
     is_joined = await redis_client.get(f"joined:{chat_id}")
+
     kb = joined_kb if (is_joined == "true") else no_joined_kb
     response = await schedule_service.get_schedule(token=token, group_id=group_id, is_even=is_even)
     return {
@@ -79,7 +81,10 @@ async def is_successful(result, call: CallbackQuery):
     elif "error" in response["data"]:
         match response["data"]["error"]:
             case ErrorMessage.TOKEN_IS_EXPIRED:
-                await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=auth_kb())
+                await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+            case _:
+                await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
     return True
 
 def get_week_schedule_info(result, is_even):
