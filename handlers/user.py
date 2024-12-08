@@ -11,10 +11,11 @@ from consts.bot_answer import START_COMMAND, START_ANSWER, STUDENT_SIGN_UP, STUD
     ADMIN_START, ENTER_YOUR_EMAIL, INVENT_PASSWORD, ADMIN_SIGNED_UP_SUCCESS, ADMIN_EMAIL_VALIDATION, \
     ADMIN_WITH_THIS_EMAIL_ALREADY_EXISTS, ADMIN_PASSWORD_IS_SHORT, ENTER_PASSWORD, ADMIN_LOGGED_IN_SUCCESS, \
     ADMIN_WITH_THIS_EMAIL_NO_EXISTS, WRONG_PASSWORD, STUDENT_LOGGED_IN, CHOOSE_YOUR_ROLE_AGAIN, FEEDBACK_LATER, \
-    HELP_COMMAND, HELP_ANSWER
+    HELP_COMMAND, HELP_ANSWER, SOMETHING_WITH_MY_MEMORY
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
+from handlers.group import group_router, group_service
 from keyboards.inline import auth_kb, roles_kb
 from keyboards.reply import to_start_kb, choose_faculty_kb, admin_kb, joined_kb, no_joined_kb
 from services.user import UserService
@@ -42,15 +43,25 @@ async def student_handler(call: CallbackQuery, state: FSMContext):
         if "access_token" in response["data"]:
             await redis_client.set(name=f"chat_id:{call.message.chat.id}", value=str(response["data"]["access_token"]))
 
-            is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
-            if is_joined is None:
-                await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=choose_faculty_kb())
+            group_response = await group_service.get_my(response["data"]["access_token"])
+
+            if "error" in group_response["data"]:
+                match group_response["data"]["error"]:
+                    case ErrorMessage.TOKEN_IS_EXPIRED:
+                        await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
+                        await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
+                    case _:
+                        await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+            else:
+                group_id = group_response["data"]["group_id"]
+                if group_id:
+                    await redis_client.set(f"joined:{call.message.chat.id}", "true")
+                    await redis_client.set(f"group_id:{call.message.chat.id}", str(group_id))
+                    await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=joined_kb())
+                else:
+                    await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=no_joined_kb())
                 await state.clear()
                 return
-
-            kb = joined_kb if (is_joined == "true") else no_joined_kb
-            await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=kb())
-            await state.clear()
         else:
             await call.message.answer(text=STUDENT_SIGN_UP, reply_markup=None)
             await state.set_state(StudentSignUp.fullname)
