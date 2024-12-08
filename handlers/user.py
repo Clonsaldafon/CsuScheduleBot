@@ -59,7 +59,7 @@ async def student_handler(call: CallbackQuery, state: FSMContext):
                     await redis_client.set(f"group_id:{call.message.chat.id}", str(group_id))
                     await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=joined_kb())
                 else:
-                    await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=no_joined_kb())
+                    await call.message.answer(text=STUDENT_LOGGED_IN, reply_markup=choose_faculty_kb())
                 await state.clear()
                 return
         else:
