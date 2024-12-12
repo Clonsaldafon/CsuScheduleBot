@@ -68,3 +68,6 @@ class GroupService(Service):
                 url=f"{self.__url}/leave",
                 headers=headers
             )
+
+
+group_service = GroupService()

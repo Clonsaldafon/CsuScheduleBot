@@ -2,7 +2,8 @@ from aiohttp import ClientSession
 
 from services.service import Service
 
-class UserService(Service):
+
+class AuthService(Service):
     def __init__(self):
         super().__init__()
         self.__url = "/api/v1/auth"
@@ -38,34 +39,6 @@ class UserService(Service):
                 body=body
             )
 
-    async def sign_up_admin(self, email, password):
-        async with ClientSession() as session:
-            body = {
-                "email": email,
-                "password": password
-            }
-
-            return await self.post(
-                session=session,
-                url=f"{self.__url}/signup",
-                headers=self.__headers,
-                body=body
-            )
-
-    async def log_in_admin(self, email, password):
-        async with ClientSession() as session:
-            body = {
-                "email": email,
-                "password": password
-            }
-
-            return await self.post(
-                session=session,
-                url=f"{self.__url}/login",
-                headers=self.__headers,
-                body=body
-            )
-
     async def who(self, token):
         async with ClientSession() as session:
             headers = {
@@ -78,3 +51,6 @@ class UserService(Service):
                 url=f"{self.__url}/who",
                 headers=headers
             )
+
+
+auth_service = AuthService()

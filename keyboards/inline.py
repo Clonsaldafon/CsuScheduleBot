@@ -1,5 +1,3 @@
-from cgitb import reset
-
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -27,6 +25,7 @@ def faculties_with_id_kb(faculties: dict):
     builder = InlineKeyboardBuilder()
     for name in faculties:
         builder.add(InlineKeyboardButton(text=name, callback_data=str(faculties[name])))
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
     return builder.adjust(1).as_markup(resize_keyboard=True)
 
 def programs_with_id_kb(programs: dict):
@@ -45,7 +44,8 @@ def programs_kb(programs: list):
 
 def all_groups_kb(groups: dict):
     builder = InlineKeyboardBuilder()
-    for short_name in groups:
+    short_names = sorted(groups.keys())
+    for short_name in short_names:
         builder.add(InlineKeyboardButton(text=short_name, callback_data=str(groups[short_name])))
     builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
     return builder.adjust(1).as_markup(resize_keyboard=True)
@@ -55,19 +55,21 @@ def schedule_types_kb():
     builder.add(InlineKeyboardButton(text=ButtonText.TODAY_SCHEDULE, callback_data=CallbackData.TODAY_CALLBACK))
     builder.add(InlineKeyboardButton(text=ButtonText.WEEK_SCHEDULE, callback_data=CallbackData.WEEK_CALLBACK))
     builder.add(InlineKeyboardButton(text=ButtonText.NEXT_WEEK_SCHEDULE, callback_data=CallbackData.NEXT_WEEK_CALLBACK))
-    return builder.adjust(2, 1).as_markup(resize_keyboard=True)
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1, 2, 1).as_markup(resize_keyboard=True)
 
-def profile_kb(is_joined: str):
+def schedule_types_with_join_kb():
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(
-        text=ButtonText.EDIT_FULL_NAME,
-        callback_data=CallbackData.EDIT_FULL_NAME_CALLBACK)
-    )
-    if is_joined == "true":
-        builder.add(InlineKeyboardButton(
-            text=ButtonText.EDIT_NOTIFICATIONS,
-            callback_data=CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
-        )
+    builder.add(InlineKeyboardButton(text=ButtonText.TODAY_SCHEDULE, callback_data=CallbackData.TODAY_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.WEEK_SCHEDULE, callback_data=CallbackData.WEEK_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.NEXT_WEEK_SCHEDULE, callback_data=CallbackData.NEXT_WEEK_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.JOIN_TO_GROUP, callback_data=CallbackData.JOIN_CALLBACK))
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(1, 2, 1, 1).as_markup(resize_keyboard=True)
+
+def my_group_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text=ButtonText.LEAVE_GROUP, callback_data=CallbackData.LEAVE_CALLBACK))
     builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
     return builder.adjust(1).as_markup(resize_keyboard=True)
 
@@ -88,6 +90,7 @@ def notifications_kb(enabled: bool):
             text=ButtonText.ENABLE_NOTIFICATIONS,
             callback_data=CallbackData.ENABLE_NOTIFICATIONS_CALLBACK)
         )
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
 
     return builder.adjust(1).as_markup(resize_keyboard=True)
 
@@ -99,7 +102,8 @@ def notification_delay_kb():
             text=f"{delay} мин.",
             callback_data=f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_{delay}")
         )
-    return builder.adjust(3).as_markup(resize_keyboard=True)
+    builder.add(InlineKeyboardButton(text=ButtonText.BACK, callback_data=CallbackData.BACK_CALLBACK))
+    return builder.adjust(3, 3, 1).as_markup(resize_keyboard=True)
 
 def feedback_kb():
     builder = InlineKeyboardBuilder()

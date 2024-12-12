@@ -26,16 +26,23 @@ class StudentService(Service):
                 body=body
             )
 
-    async def update_notifications_enabled(self, token, enabled):
+    async def update_notifications(self, token, enabled, delay = None):
         async with ClientSession() as session:
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}"
             }
 
-            body = {
-                "notifications_enabled": enabled
-            }
+            if delay:
+                body = {
+                    "notifications_enabled": enabled,
+                    "notification_delay": delay
+                }
+            else:
+                body = {
+                    "notifications_enabled": enabled,
+                    "notification_delay": delay
+                }
 
             return await self.patch(
                 session=session,
@@ -44,20 +51,5 @@ class StudentService(Service):
                 body=body
             )
 
-    async def update_notification_delay(self, token, delay):
-        async with ClientSession() as session:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}"
-            }
 
-            body = {
-                "notification_delay": delay
-            }
-
-            return await self.patch(
-                session=session,
-                url=f"{self.__url}/settings",
-                headers=headers,
-                body=body
-            )
+student_service = StudentService()

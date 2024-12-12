@@ -9,6 +9,7 @@ class ErrorMessage:
 
     GROUP_ALREADY_EXISTS = "group already exists with this shortname"
     YOU_ARE_ALREADY_IN_GROUP = "you are already in a group"
+    MEMBER_NOT_FOUND = "member not found"
 
     SIGN_UP_EMAIL_VALIDATION = "Key: 'SignUpRequest.Email' Error:Field validation" \
                                "for 'Email' failed on the 'email' tag"

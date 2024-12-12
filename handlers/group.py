@@ -1,260 +1,313 @@
+import logging
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery
 
-from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, CHOOSE_YOUR_FACULTY, CHOOSE_YOUR_PROGRAM, \
-    GROUPS_WILL_BE_HERE_SOON, CHOOSE_YOUR_GROUP, NOW_YOU_CAN_VIEW_SCHEDULE, SOMETHING_WENT_WRONG, \
-    YOU_JOINED_SUCCESSFUL, YOUR_GROUPS, YOU_CAN_FIND_GROUP_AGAIN, YOU_LEAVED_SUCCESSFUL, CHOOSE_YOUR_ROLE_AGAIN, \
-    YOU_ARE_ALREADY_JOINED, CHOOSE_SCHEDULE_TYPE
+from consts.bot_answer import CHOOSE_FACULTY, CHOOSE_PROGRAM, \
+    GROUPS_WILL_BE_HERE_SOON, CHOOSE_GROUP, SOMETHING_WENT_WRONG, \
+    YOU_JOINED_SUCCESSFUL, YOU_LEAVED_SUCCESSFUL, \
+    YOU_ARE_ALREADY_JOINED, CHOOSE_SCHEDULE_TYPE, FACULTIES_ARE_EMPTY, PROGRAMS_ARE_EMPTY, START_ANSWER, \
+    CHOOSE_SCHEDULE_TYPE_OR_JOIN_TO_GROUP
 from consts.error import ErrorMessage
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from keyboards.reply import no_joined_kb, choose_faculty_kb, joined_kb
-from services.university_structure import UniversityStructureService
-from services.group import GroupService
-from states.group import Group
-from keyboards.inline import all_groups_kb, faculties_with_id_kb, programs_kb, roles_kb, schedule_types_kb
+from keyboards.reply import no_joined_kb, joined_kb
+from middlewares.auth import auth_middleware
+from services.group import group_service
+from services.university_structure import university_structure_service
+from states.group import MyGroup
+from states.schedule import Schedule
+from keyboards.inline import all_groups_kb, faculties_with_id_kb, programs_kb, schedule_types_kb, back_kb, \
+    schedule_types_with_join_kb, my_group_kb
+
 
 group_router = Router()
-group_service = GroupService()
-university_structure_service = UniversityStructureService()
+
+group_router.message.middleware(auth_middleware)
+group_router.callback_query.middleware(auth_middleware)
+
 all_groups = dict()
 
-@group_router.message(F.text.in_({
-    ButtonText.CHOOSE_FACULTY,
-    ButtonText.ANOTHER_GROUP_SCHEDULE
-}))
+@group_router.message(F.text == ButtonText.GROUPS)
 async def choose_faculty_handler(msg: Message, state: FSMContext):
-    await redis_client.set(
-        name=f"another_group:{msg.chat.id}",
-        value=str(msg.text == ButtonText.ANOTHER_GROUP_SCHEDULE)
-    )
+    await state.set_state(Schedule.faculty)
+    await choose_faculty_with_msg(msg, state)
 
+async def choose_faculty_with_msg(msg: Message, state: FSMContext):
     try:
-        token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        response = await university_structure_service.get_faculties(token)
+        token = await redis_client.get(name=f"chat_id:{msg.chat.id}")
 
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
+        try:
+            response = await university_structure_service.get_faculties(token=token)
 
-            await state.clear()
-        else:
-            faculties = dict()
-            for faculty in response["data"]:
-                faculties[faculty["name"]] = faculty["faculty_id"]
+            if "data" in response:
+                if response["data"]:
+                    faculties = dict()
+                    for faculty in response["data"]:
+                        faculties[faculty["name"]] = faculty["faculty_id"]
 
-            await msg.answer(text=CHOOSE_YOUR_FACULTY, reply_markup=faculties_with_id_kb(faculties))
-            await state.set_state(Group.faculty)
-    except Exception as e:
-        print(e)
-
-@group_router.callback_query(F.data, Group.faculty)
-async def capture_faculty(call: CallbackQuery, state: FSMContext):
-    faculty_id = call.data
-    await state.update_data(faculty_id=faculty_id)
-
-    try:
-        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
-        response = await university_structure_service.get_programs(token, faculty_id)
-
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
-            await state.clear()
-        else:
-            programs = list()
-            for program in response["data"]:
-                programs.append(program["name"])
-
-            await call.message.edit_text(text=CHOOSE_YOUR_PROGRAM, reply_markup=programs_kb(programs))
-            await state.set_state(Group.program)
-    except Exception as e:
-        print(e)
-
-
-@group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Group.program)
-async def capture_program(call: CallbackQuery, state: FSMContext):
-    program = call.data
-    await state.update_data(program=program)
-
-    try:
-        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
-        response = await group_service.get_groups(token, program)
-
-        if response["data"] is None:
-            if await redis_client.get(f"another_group:{call.message.chat.id}") == "True":
-                await call.message.answer(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=joined_kb())
+                    await msg.answer(text=CHOOSE_FACULTY, reply_markup=faculties_with_id_kb(faculties))
+                else:
+                    await msg.answer(text=FACULTIES_ARE_EMPTY)
+                    await state.clear()
             else:
-                await call.message.answer(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=choose_faculty_kb())
-            await state.clear()
-        elif "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
-            await state.clear()
-        else:
-            groups = dict()
-            for group in response["data"]:
-                groups[group["short_name"]] = group["group_id"]
-
-            await call.message.edit_text(text=CHOOSE_YOUR_GROUP, reply_markup=all_groups_kb(groups))
-            await state.set_state(Group.group_id)
+                await msg.answer(text=FACULTIES_ARE_EMPTY)
+                await state.clear()
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
 
-@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Group.program)
+async def choose_faculty_with_call(call: CallbackQuery, state: FSMContext):
+    try:
+        token = await redis_client.get(name=f"chat_id:{call.message.chat.id}")
+
+        try:
+            response = await university_structure_service.get_faculties(token=token)
+
+            if "data" in response:
+                if response["data"]:
+                    faculties = dict()
+                    for faculty in response["data"]:
+                        faculties[faculty["name"]] = faculty["faculty_id"]
+
+                    await call.message.edit_text(text=CHOOSE_FACULTY, reply_markup=faculties_with_id_kb(faculties))
+                else:
+                    await call.message.edit_text(text=FACULTIES_ARE_EMPTY)
+                    await state.clear()
+            else:
+                await call.message.edit_text(text=FACULTIES_ARE_EMPTY)
+                await state.clear()
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Schedule.faculty)
+async def capture_faculty(call: CallbackQuery, state: FSMContext):
+    await state.update_data(faculty_id=call.data)
+    await chosen_faculty(call, state, call.data)
+
+async def chosen_faculty(call: CallbackQuery, state: FSMContext, faculty_id):
+    try:
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
+
+        try:
+            response = await university_structure_service.get_programs(token, faculty_id)
+
+            if "data" in response:
+                if response["data"]:
+                    programs = list()
+                    for program in response["data"]:
+                        programs.append(program["name"])
+
+                    await call.message.edit_text(text=CHOOSE_PROGRAM, reply_markup=programs_kb(programs))
+                    await state.set_state(Schedule.program)
+                else:
+                    await call.message.edit_text(text=PROGRAMS_ARE_EMPTY, reply_markup=back_kb())
+                    await state.set_state(Schedule.faculty)
+            else:
+                await call.message.edit_text(text=PROGRAMS_ARE_EMPTY, reply_markup=back_kb())
+                await state.set_state(Schedule.faculty)
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.faculty)
+async def back_faculty_handler(call: CallbackQuery, state: FSMContext):
+    try:
+        is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
+
+        await call.message.delete()
+        await state.clear()
+
+        if is_joined == "true":
+            await call.message.answer(text=START_ANSWER, reply_markup=joined_kb())
+        else:
+            await call.message.answer(text=START_ANSWER, reply_markup=no_joined_kb())
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Schedule.program)
+async def capture_program(call: CallbackQuery, state: FSMContext):
+    await state.update_data(program=call.data)
+    await chosen_program(call, state, call.data)
+
+async def chosen_program(call: CallbackQuery, state: FSMContext, program):
+    try:
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
+
+        try:
+            response = await group_service.get_groups(token, program)
+
+            if "data" in response:
+                if response["data"]:
+                    groups = dict()
+                    for group in response["data"]:
+                        groups[group["short_name"]] = group["group_id"]
+
+                    await call.message.edit_text(text=CHOOSE_GROUP, reply_markup=all_groups_kb(groups))
+                    await state.set_state(Schedule.group_id)
+                else:
+                    await call.message.edit_text(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=back_kb())
+                    await state.set_state(Schedule.program)
+            else:
+                await call.message.edit_text(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=back_kb())
+                await state.set_state(Schedule.program)
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.program)
 async def back_program_handler(call: CallbackQuery, state: FSMContext):
-    try:
-        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
-        response = await university_structure_service.get_faculties(token)
+    await choose_faculty_with_call(call, state)
+    await state.set_state(Schedule.faculty)
 
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
-            await state.clear()
-        else:
-            faculties = dict()
-            for faculty in response["data"]:
-                faculties[faculty["name"]] = faculty["faculty_id"]
-
-            await call.message.edit_text(text=CHOOSE_YOUR_FACULTY, reply_markup=faculties_with_id_kb(faculties))
-            await state.set_state(Group.faculty)
-    except Exception as e:
-        print(e)
-
-@group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Group.group_id)
+@group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Schedule.group_id)
 async def capture_group(call: CallbackQuery, state: FSMContext):
-    group_id = call.data
-    await state.update_data(group_id=group_id)
+    await state.update_data(group_id=call.data)
+    await chosen_group(call, state, call.data)
 
-    is_another_group = await redis_client.get(name=f"another_group:{call.message.chat.id}")
-    if is_another_group == "True":
-        await redis_client.set(name=f"another_group_id:{call.message.chat.id}", value=str(group_id))
-        await call.message.answer(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_kb())
-    else:
+async def chosen_group(call: CallbackQuery, state: FSMContext, group_id):
+    try:
         await redis_client.set(name=f"group_id:{call.message.chat.id}", value=str(group_id))
-        await call.message.answer(text=NOW_YOU_CAN_VIEW_SCHEDULE, reply_markup=no_joined_kb())
-
-    await state.clear()
-
-@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Group.group_id)
-async def back_group_handler(call: CallbackQuery, state: FSMContext):
-    await state.set_state(Group.program)
-    faculty_id = await state.get_value("faculty_id")
-
-    try:
-        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
-        response = await university_structure_service.get_programs(token, faculty_id)
-
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=choose_faculty_kb())
-            await state.clear()
-        else:
-            programs = list()
-            for program in response["data"]:
-                programs.append(program["name"])
-
-            await call.message.edit_text(text=CHOOSE_YOUR_PROGRAM, reply_markup=programs_kb(programs))
-            await state.set_state(Group.program)
-    except Exception as e:
-        print(e)
-
-@group_router.message(F.text == ButtonText.JOIN_TO_GROUP)
-async def group_join_handler(msg: Message):
-    try:
-        token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        group_id = await redis_client.get(f"group_id:{msg.chat.id}")
-
-        response = await group_service.join(token=token, group_id=group_id)
-
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case ErrorMessage.YOU_ARE_ALREADY_IN_GROUP:
-                    await msg.answer(text=YOU_ARE_ALREADY_JOINED, reply_markup=joined_kb())
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=no_joined_kb())
-        else:
-            await redis_client.set(name=f"joined:{msg.chat.id}", value="true")
-            await msg.answer(
-                text=YOU_JOINED_SUCCESSFUL,
-                reply_markup=joined_kb()
+        if await redis_client.get(name=f"joined:{call.message.chat.id}") != "true":
+            await call.message.edit_text(
+                text=CHOOSE_SCHEDULE_TYPE_OR_JOIN_TO_GROUP,
+                reply_markup=schedule_types_with_join_kb()
             )
+        else:
+            await call.message.edit_text(
+                text=CHOOSE_SCHEDULE_TYPE,
+                reply_markup=schedule_types_kb()
+            )
+        await state.set_state(Schedule.schedule_type)
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.group_id)
+async def back_group_handler(call: CallbackQuery, state: FSMContext):
+    faculty_id = await state.get_value("faculty_id")
+    await chosen_faculty(call, state, faculty_id)
+
+@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.schedule_type)
+async def back_schedule_handler(call: CallbackQuery, state: FSMContext):
+    try:
+        my_group_id = await redis_client.get(f"my_group_id:{call.message.chat.id}")
+        if my_group_id:
+            group_id = await redis_client.get(f"group_id:{call.message.chat.id}")
+            if my_group_id != group_id:
+                await redis_client.set(name=f"group_id:{call.message.chat.id}", value=str(my_group_id))
+            else:
+                await call.message.delete()
+                await call.message.answer(text=START_ANSWER, reply_markup=joined_kb())
+                return
+
+            program = await state.get_value("program")
+            await chosen_program(call, state, program)
+        else:
+            if await redis_client.get(f"joined:{call.message.chat.id}") == "true":
+                await call.message.delete()
+                await call.message.answer(text=START_ANSWER, reply_markup=joined_kb())
+            else:
+                program = await state.get_value("program")
+                await chosen_program(call, state, program)
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.callback_query(F.data == CallbackData.JOIN_CALLBACK)
+async def group_join_handler(call: CallbackQuery, state: FSMContext):
+    try:
+        group_id = await state.get_value("group_id")
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
+
+        try:
+            response = await group_service.join(token=token, group_id=group_id)
+
+            if "data" in response:
+                if "error" in response["data"]:
+                    match response["data"]["error"]:
+                        case ErrorMessage.YOU_ARE_ALREADY_IN_GROUP:
+                            await redis_client.set(name=f"joined:{call.message.chat.id}", value="true")
+                            await call.message.delete()
+                            await call.message.answer(text=YOU_ARE_ALREADY_JOINED, reply_markup=joined_kb())
+                    await state.clear()
+                    return
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
+
+        await redis_client.set(name=f"joined:{call.message.chat.id}", value="true")
+        await call.message.delete()
+        await call.message.answer(text=YOU_JOINED_SUCCESSFUL, reply_markup=joined_kb())
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")
 
 @group_router.message(F.text == ButtonText.MY_GROUP)
-async def my_group_handler(msg: Message):
+async def my_group_handler(msg: Message, state: FSMContext):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        is_joined = await redis_client.get(f"joined:{msg.chat.id}")
-        kb = joined_kb if (is_joined == "true") else no_joined_kb
 
-        response = await group_service.get_my(token)
+        try:
+            response = await group_service.get_my(token)
 
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
+            if "data" in response:
+                if "group_id" in response["data"]:
+                    await redis_client.set(name=f"group_id:{msg.chat.id}", value=str(response["data"]["group_id"]))
+                    await redis_client.set(name=f"my_group_id:{msg.chat.id}", value=str(response["data"]["group_id"]))
+                    if await redis_client.get(f"joined:{msg.chat.id}") != "true":
+                        await redis_client.set(name=f"joined:{msg.chat.id}", value="true")
+                    answer = group_service.get_info(response["data"])
+                    await msg.answer(text=answer, reply_markup=my_group_kb())
+                    await state.set_state(MyGroup.group)
+                else:
                     await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
-        elif "group_id" in response["data"]:
-            answer = group_service.get_info(response["data"])
-
-            await msg.answer(text=answer,reply_markup=kb())
-        else:
-            answer = YOUR_GROUPS
-            for group in response["data"]:
-                answer += group_service.get_info(group)
-
-            await msg.answer(text=answer, reply_markup=kb())
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
 
-@group_router.message(F.text == ButtonText.BACK_TO_GROUP_CHOICE)
-async def back_group_handler(msg: Message, state: FSMContext):
-    await msg.answer(text=YOU_CAN_FIND_GROUP_AGAIN, reply_markup=choose_faculty_kb())
-    await state.set_state(Group.faculty)
+@group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, MyGroup.group)
+async def back_my_group_handler(call: CallbackQuery, state: FSMContext):
+    await call.message.delete()
+    await call.message.answer(text=START_ANSWER, reply_markup=joined_kb())
+    await state.clear()
 
-@group_router.message(F.text == ButtonText.LEAVE_GROUP)
-async def leave_group_handler(msg: Message):
+@group_router.callback_query(F.data == CallbackData.LEAVE_CALLBACK)
+async def leave_group_handler(call: CallbackQuery, state: FSMContext):
     try:
-        token = await redis_client.get(f"chat_id:{msg.chat.id}")
-        response = await group_service.leave(token)
+        token = await redis_client.get(f"chat_id:{call.message.chat.id}")
 
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
-        else:
-            await redis_client.set(name=f"joined:{msg.chat.id}", value="false")
-            await msg.answer(text=YOU_LEAVED_SUCCESSFUL, reply_markup=no_joined_kb())
+        try:
+            response = await group_service.leave(token)
+
+            if "data" in response:
+                if "error" not in response["data"]:
+                    await call.message.delete()
+                    await call.message.answer(text=YOU_LEAVED_SUCCESSFUL, reply_markup=no_joined_kb())
+                else:
+                    await call.message.delete()
+                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
+                    return
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
+
+        await redis_client.delete(f"joined:{call.message.chat.id}")
+        await redis_client.delete(f"group_id:{call.message.chat.id}")
+        await redis_client.delete(f"my_group_id:{call.message.chat.id}")
+        await state.clear()
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
+
+@group_router.message(F.text == ButtonText.ANOTHER_GROUP_SCHEDULE)
+async def another_group_schedule_handler(msg: Message, state: FSMContext):
+    try:
+        group_id = await redis_client.get(name=f"group_id:{msg.chat.id}")
+        await redis_client.set(name=f"my_group_id:{msg.chat.id}", value=str(group_id))
+
+        await state.set_state(Schedule.faculty)
+        await choose_faculty_with_msg(msg, state)
+    except Exception as e:
+        logging.error(msg=f"Redis error: {e}")

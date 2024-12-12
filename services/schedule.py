@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from aiohttp import ClientSession
 
 from services.service import Service
@@ -33,3 +31,6 @@ class ScheduleService(Service):
                 url=f"{self.__url}/{group_id}/schedule?week_even={str(is_even).lower()}",
                 headers=headers
             )
+
+
+schedule_service = ScheduleService()

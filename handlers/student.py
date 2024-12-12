@@ -1,120 +1,91 @@
+import logging
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery
 
-from consts.bot_answer import SOMETHING_WITH_MY_MEMORY, DATA_UPDATED_SUCCESSFUL, ENTER_NEW_FULL_NAME, CHOOSE_SETTINGS, \
-    CHOOSE_NOTIFICATION_DELAY, SOMETHING_WENT_WRONG, CHOOSE_YOUR_ROLE_AGAIN, SOMETHING_WITH_FULLNAME_VALIDATION, \
-    YOU_NEED_TO_USE_BUTTONS
-from consts.error import ErrorMessage
+from consts.bot_answer import DATA_UPDATED_SUCCESSFUL, \
+    CHOOSE_NOTIFICATION_DELAY, SOMETHING_WENT_WRONG, \
+    START_ANSWER, SUPPORT_ANSWER, NOTIFICATIONS_WARNING
 from consts.kb import ButtonText, CallbackData
 from database.db import redis_client
-from handlers.user import is_fullname_valid
-from keyboards.inline import profile_kb, notifications_kb, notification_delay_kb, roles_kb, back_kb
+from keyboards.inline import notifications_kb, notification_delay_kb
 from keyboards.reply import joined_kb, no_joined_kb
-from services.student import StudentService
-from services.user import UserService
-from states.student import StudentEditProfile
+from middlewares.auth import auth_middleware
+from services.student import student_service
+from services.auth import auth_service
+from states.student import StudentProfile
 
 student_router = Router()
-user_service = UserService()
-student_service = StudentService()
+
+student_router.message.middleware(auth_middleware)
+student_router.callback_query.middleware(auth_middleware)
 
 is_notifications_enabled = False
-
-student_info = ""
+student_notifications_answer = ""
 is_joined = ""
 
-@student_router.message(F.text == ButtonText.MY_PROFILE)
-async def my_profile_handler(msg: Message, state: FSMContext):
-    await state.set_state(StudentEditProfile.profile)
-
+@student_router.message(F.text == ButtonText.NOTIFICATIONS)
+async def notifications_handler(msg: Message, state: FSMContext):
     try:
         token = await redis_client.get(f"chat_id:{msg.chat.id}")
         global is_joined
         is_joined = await redis_client.get(f"joined:{msg.chat.id}")
-        response = await user_service.who(token)
+        kb = joined_kb if (is_joined == "true") else no_joined_kb
 
-        if "error" in response["data"]:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=profile_kb(is_joined))
-        else:
-            global is_notifications_enabled
-            is_notifications_enabled = response["data"]["notifications_enabled"]
+        try:
+            response = await auth_service.who(token)
 
-            answer = f"<i>{"Студент" if response["data"]["role"] == "student" else "Староста"}</i>\n"
-            answer += f"<b>ФИО:</b> {response["data"]["full_name"]}\n"
-            answer += f"<b>Имя пользователя:</b> @{response["data"]["telegram_username"]}\n"
-            answer += f"<b>Уведомления:</b> {"включены" if is_notifications_enabled else "отключены"}\n"
-            if is_notifications_enabled:
-                answer += f"Уведомлять за <b>{response["data"]["notification_delay"]} мин.</b> до пары"
+            if "data" in response:
+                if "error" in response["data"]:
+                    await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=kb())
+                else:
+                    global is_notifications_enabled
+                    is_notifications_enabled = response["data"]["notifications_enabled"]
 
-            global student_info
-            student_info = answer
-            await msg.answer(text=answer, reply_markup=profile_kb(is_joined))
+                    answer = f"<b>Уведомления:</b> {"включены" if is_notifications_enabled else "отключены"}"
+                    if is_notifications_enabled:
+                        answer += f"\nУведомлять за <b>{response["data"]["notification_delay"]} мин.</b> до пары"
+                    if is_notifications_enabled and is_joined != "true":
+                        answer += f"\n\n{NOTIFICATIONS_WARNING}"
+
+                    answer += f"\n\n{SUPPORT_ANSWER}"
+
+                    global student_notifications_answer
+                    student_notifications_answer = answer
+                    await msg.answer(text=answer, reply_markup=notifications_kb(is_notifications_enabled))
+                    await state.set_state(StudentProfile.notifications)
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
 
-@student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentEditProfile.profile)
-async def back_my_profile_handler(call: CallbackQuery, state: FSMContext):
+@student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentProfile.notifications)
+async def back_notifications_handler(call: CallbackQuery, state: FSMContext):
     kb = joined_kb if (is_joined == "true") else no_joined_kb
     await call.message.delete()
-    await call.message.answer(text=YOU_NEED_TO_USE_BUTTONS, reply_markup=kb())
+    await call.message.answer(text=START_ANSWER, reply_markup=kb())
     await state.clear()
 
-@student_router.callback_query(F.data == CallbackData.EDIT_FULL_NAME_CALLBACK)
-async def edit_full_name_handler(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_text(text=ENTER_NEW_FULL_NAME, reply_markup=back_kb())
-    await state.set_state(StudentEditProfile.fullname)
-
-@student_router.message(F.text, StudentEditProfile.fullname)
-async def capture_new_full_name(msg: Message, state: FSMContext):
-    full_name = msg.text
-    await state.update_data(fullname=full_name)
-
-    try:
-        if is_fullname_valid(full_name):
-            token = await redis_client.get(f"chat_id:{msg.chat.id}")
-            global is_joined
-            is_joined = await redis_client.get(f"joined:{msg.chat.id}")
-            kb = joined_kb if (is_joined == "true") else no_joined_kb
-
-            response = await student_service.update_full_name(token, full_name)
-
-            if response["status_code"] == 200:
-                await msg.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
-                await state.clear()
-            else:
-                match response["data"]["error"]:
-                    case ErrorMessage.TOKEN_IS_EXPIRED:
-                        await msg.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                        await msg.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                    case _:
-                        await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
-        else:
-            await msg.answer(text=SOMETHING_WITH_FULLNAME_VALIDATION, reply_markup=back_kb())
-            await state.set_state(StudentEditProfile.fullname)
-    except Exception as e:
-        print(e)
-
-@student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentEditProfile.fullname)
-async def back_new_full_name_handler(call: Message, state: FSMContext):
-    await call.message.edit_text(text=student_info, reply_markup=profile_kb(is_joined))
-    await state.set_state(StudentEditProfile.profile)
-
-@student_router.callback_query(F.data == CallbackData.EDIT_NOTIFICATIONS_CALLBACK)
-async def edit_notifications_handler(call: CallbackQuery):
-    await call.message.edit_text(text=CHOOSE_SETTINGS, reply_markup=notifications_kb(is_notifications_enabled))
+@student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentProfile.notifications_enabling)
+async def back_edit_notifications_handler(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_text(
+        text=student_notifications_answer,
+        reply_markup=notifications_kb(is_notifications_enabled)
+    )
+    await state.set_state(StudentProfile.notifications)
 
 @student_router.callback_query(F.data.in_({
     CallbackData.ENABLE_NOTIFICATIONS_CALLBACK,
     CallbackData.DISABLE_NOTIFICATIONS_CALLBACK
-}))
-async def capture_notifications_enabling(call: CallbackQuery):
+}), StudentProfile.notifications)
+async def capture_notifications_enabling(call: CallbackQuery, state: FSMContext):
     enabled = call.data == CallbackData.ENABLE_NOTIFICATIONS_CALLBACK
+    await state.update_data(notifications_enabling=enabled)
+    await notifications_enabling(call, state)
+
+async def notifications_enabling(call: CallbackQuery, state: FSMContext):
+    enabled = await state.get_value("notifications_enabling")
 
     try:
         token = await redis_client.get(f"chat_id:{call.message.chat.id}")
@@ -122,26 +93,38 @@ async def capture_notifications_enabling(call: CallbackQuery):
         is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
         kb = joined_kb if (is_joined == "true") else no_joined_kb
 
-        response = await student_service.update_notifications_enabled(token, enabled)
-
-        if response["status_code"] == 200:
-            if enabled:
-                await call.message.edit_text(text=CHOOSE_NOTIFICATION_DELAY, reply_markup=notification_delay_kb())
-            else:
-                await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
+        if enabled:
+            await call.message.edit_text(
+                text=CHOOSE_NOTIFICATION_DELAY,
+                reply_markup=notification_delay_kb()
+            )
+            await state.set_state(StudentProfile.notification_delay)
         else:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
+            try:
+                response = await student_service.update_notifications(token, enabled)
+
+                if "data" in response:
+                    if "error" not in response["data"]:
+                        await call.message.delete()
+                        await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
+                        await state.clear()
+            except Exception as e:
+                logging.error(msg=f"Error: {e}")
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")
 
 @student_router.callback_query(F.data == CallbackData.NOTIFICATIONS_DELAY_CALLBACK)
-async def edit_notification_delay_handler(call: CallbackQuery):
+async def edit_notification_delay_handler(call: CallbackQuery, state: FSMContext):
     await call.message.edit_text(text=CHOOSE_NOTIFICATION_DELAY, reply_markup=notification_delay_kb())
+    await state.set_state(StudentProfile.notification_delay)
+
+@student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentProfile.notification_delay)
+async def back_edit_notifications_delay_handler(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_text(
+        text=student_notifications_answer,
+        reply_markup=notifications_kb(is_notifications_enabled)
+    )
+    await state.set_state(StudentProfile.notifications)
 
 @student_router.callback_query(F.data.in_({
     f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_5",
@@ -149,9 +132,9 @@ async def edit_notification_delay_handler(call: CallbackQuery):
     f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_20",
     f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_30",
     f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_45",
-    f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_60",
-}))
-async def capture_edit_notification_delay(call: CallbackQuery):
+    f"{CallbackData.NOTIFICATIONS_DELAY_CALLBACK}_60"
+}), StudentProfile.notification_delay)
+async def capture_edit_notification_delay(call: CallbackQuery, state: FSMContext):
     delay = int(call.data.split("_")[-1])
 
     try:
@@ -160,16 +143,17 @@ async def capture_edit_notification_delay(call: CallbackQuery):
         is_joined = await redis_client.get(f"joined:{call.message.chat.id}")
         kb = joined_kb if (is_joined == "true") else no_joined_kb
 
-        response = await student_service.update_notification_delay(token, delay)
+        enabled = await state.get_value("notifications_enabling")
 
-        if response["status_code"] == 200:
-            await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
-        else:
-            match response["data"]["error"]:
-                case ErrorMessage.TOKEN_IS_EXPIRED:
-                    await call.message.answer(text=SOMETHING_WITH_MY_MEMORY, reply_markup=ReplyKeyboardRemove())
-                    await call.message.answer(text=CHOOSE_YOUR_ROLE_AGAIN, reply_markup=roles_kb())
-                case _:
-                    await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=None)
+        try:
+            response = await student_service.update_notifications(token, enabled, delay)
+
+            if "data" in response:
+                if "error" not in response["data"]:
+                    await call.message.delete()
+                    await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
+                    await state.clear()
+        except Exception as e:
+            logging.error(msg=f"Error: {e}")
     except Exception as e:
-        print(e)
+        logging.error(msg=f"Redis error: {e}")

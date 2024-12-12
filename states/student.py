@@ -1,14 +1,7 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class StudentSignUp(StatesGroup):
-    fullname = State()
-
-class StudentLogIn(StatesGroup):
-    fullname = State()
-
-class StudentEditProfile(StatesGroup):
-    profile = State()
-    fullname = State()
-    notifications_enabled = State()
+class StudentProfile(StatesGroup):
+    notifications = State()
+    notifications_enabling = State()
     notification_delay = State()

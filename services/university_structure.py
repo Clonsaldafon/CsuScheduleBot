@@ -33,3 +33,6 @@ class UniversityStructureService(Service):
                 url=f"{self.__url}/faculties/{faculty_id}/programs",
                 headers=headers
             )
+
+
+university_structure_service = UniversityStructureService()

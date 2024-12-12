@@ -11,13 +11,13 @@ from dotenv import load_dotenv
 from aiogram.fsm.storage.redis import RedisStorage
 
 from database.db import redis_client
-from handlers.admin import admin_router
+from handlers.command import command_router
 from handlers.feedback import survey_check_loop
 from handlers.group import group_router
+from handlers.new_update import send_new_update_message
 from handlers.schedule import schedule_router
 from handlers.student import student_router
-from handlers.user import user_router
-
+from handlers.auth import auth_router
 
 async def shutdown(bot: Bot, dp: Dispatcher):
     await dp.storage.close()
@@ -49,12 +49,13 @@ async def main():
 
     bot = Bot(token=os.getenv("BOT_TOKEN"), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=RedisStorage(redis=redis_client))
-    dp.include_routers(user_router, admin_router, student_router, group_router, schedule_router)
+    dp.include_routers(auth_router, command_router, student_router, group_router, schedule_router)
 
     tasks = [
         asyncio.create_task(delete_webhook(bot)),
         asyncio.create_task(start_polling(bot, dp)),
-        asyncio.create_task(survey_check_loop(bot))
+        asyncio.create_task(survey_check_loop(bot)),
+        asyncio.create_task(send_new_update_message(bot))
     ]
 
     try:
