@@ -14,7 +14,7 @@ async def send_survey_invitation(bot: Bot, chat_id: int):
     try:
         await bot.send_message(chat_id=chat_id, text=FEEDBACK, reply_markup=feedback_kb())
     except Exception as e:
-        logging.error(msg=f"Failed to send a message to the user {chat_id}: {e}")
+        logging.error(msg=f"Failed to send a feedback message to the user {chat_id}: {e}")
 
 async def survey_check_loop(bot):
     while True:
@@ -29,4 +29,4 @@ async def survey_check_loop(bot):
                     await redis_client.delete(key)
             await asyncio.sleep(172800)
         except Exception as e:
-            logging.error(f"Redis error: {e}")
+            logging.error(f"Redis error when try getting keys started_at to send feedback message: {e}")

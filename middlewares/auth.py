@@ -61,7 +61,7 @@ class AuthMiddleware(BaseMiddleware):
 
                             return
                 except Exception as e:
-                    logging.error(msg=f"Error during authorization: {e}")
+                    logging.error(msg=f"Error during authorization for user {message.chat.id}: {e}")
 
                     await message.answer(text=AUTHORIZATION_ERROR)
 
@@ -69,7 +69,7 @@ class AuthMiddleware(BaseMiddleware):
 
             return await handler(event, data)
         except Exception as e:
-            logging.error(msg=f"Redis error: {e}")
+            logging.error(msg=f"Redis error when try getting chat_id:{message.chat.id} in auth middleware: {e}")
 
 
 auth_middleware = AuthMiddleware()

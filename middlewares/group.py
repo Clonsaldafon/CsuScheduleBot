@@ -43,11 +43,14 @@ class GroupMiddleware(BaseMiddleware):
                                 case ErrorMessage.YOU_ARE_ALREADY_IN_GROUP:
                                     await message.answer(text=START_ANSWER, reply_markup=joined_kb())
                 except Exception as e:
-                    logging.error(msg=f"Error: {e}")
+                    logging.error(
+                        msg=f"Error when try getting my group for user {message.chat.id} "\
+                            f"in group middleware: {e}"
+                    )
 
             return await handler(event, data)
         except Exception as e:
-            logging.error(msg=f"Redis error: {e}")
+            logging.error(msg=f"Redis error when try getting group_id:{message.chat.id} in group middleware: {e}")
 
 
 group_middleware = GroupMiddleware()

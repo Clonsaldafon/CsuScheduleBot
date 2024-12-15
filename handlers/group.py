@@ -48,16 +48,20 @@ async def choose_faculty_with_msg(msg: Message, state: FSMContext):
                         faculties[faculty["name"]] = faculty["faculty_id"]
 
                     await msg.answer(text=CHOOSE_FACULTY, reply_markup=faculties_with_id_kb(faculties))
+                    logging.info(msg=f"User {msg.chat.id} get faculties successful")
                 else:
                     await msg.answer(text=FACULTIES_ARE_EMPTY)
                     await state.clear()
+                    logging.warning(msg=f"Faculties are empty for user {msg.chat.id}")
             else:
                 await msg.answer(text=FACULTIES_ARE_EMPTY)
                 await state.clear()
+                logging.warning(msg=f"Faculties are empty for user {msg.chat.id}")
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting faculties for user {msg.chat.id}: {e}")
+
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting chat_id:{msg.chat.id} in choose faculty: {e}")
 
 async def choose_faculty_with_call(call: CallbackQuery, state: FSMContext):
     try:
@@ -73,16 +77,20 @@ async def choose_faculty_with_call(call: CallbackQuery, state: FSMContext):
                         faculties[faculty["name"]] = faculty["faculty_id"]
 
                     await call.message.edit_text(text=CHOOSE_FACULTY, reply_markup=faculties_with_id_kb(faculties))
+                    logging.info(msg=f"User {call.message.chat.id} get faculties successful")
                 else:
                     await call.message.edit_text(text=FACULTIES_ARE_EMPTY)
                     await state.clear()
+                    logging.warning(msg=f"Faculties are empty for user {call.message.chat.id}")
             else:
                 await call.message.edit_text(text=FACULTIES_ARE_EMPTY)
                 await state.clear()
+                logging.warning(msg=f"Faculties are empty for user {call.message.chat.id}")
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting faculties for user {call.message.chat.id}: {e}")
+
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting chat_id:{call.message.chat.id} in choose faculty: {e}")
 
 @group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Schedule.faculty)
 async def capture_faculty(call: CallbackQuery, state: FSMContext):
@@ -104,16 +112,20 @@ async def chosen_faculty(call: CallbackQuery, state: FSMContext, faculty_id):
 
                     await call.message.edit_text(text=CHOOSE_PROGRAM, reply_markup=programs_kb(programs))
                     await state.set_state(Schedule.program)
+                    logging.info(msg=f"User {call.message.chat.id} get programs successful")
                 else:
                     await call.message.edit_text(text=PROGRAMS_ARE_EMPTY, reply_markup=back_kb())
                     await state.set_state(Schedule.faculty)
+                    logging.warning(msg=f"Programs are empty for user {call.message.chat.id}")
             else:
                 await call.message.edit_text(text=PROGRAMS_ARE_EMPTY, reply_markup=back_kb())
                 await state.set_state(Schedule.faculty)
+                logging.warning(msg=f"Programs are empty for user {call.message.chat.id}")
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting programs for user {call.message.chat.id}: {e}")
+
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting chat_id:{call.message.chat.id} in choose program: {e}")
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.faculty)
 async def back_faculty_handler(call: CallbackQuery, state: FSMContext):
@@ -128,7 +140,10 @@ async def back_faculty_handler(call: CallbackQuery, state: FSMContext):
         else:
             await call.message.answer(text=START_ANSWER, reply_markup=no_joined_kb())
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(
+            msg=f"Redis error when try getting joined:{call.message.chat.id} "\
+                f"after click on back in faculties: {e}"
+        )
 
 @group_router.callback_query(F.data != CallbackData.BACK_CALLBACK, Schedule.program)
 async def capture_program(call: CallbackQuery, state: FSMContext):
@@ -150,16 +165,20 @@ async def chosen_program(call: CallbackQuery, state: FSMContext, program):
 
                     await call.message.edit_text(text=CHOOSE_GROUP, reply_markup=all_groups_kb(groups))
                     await state.set_state(Schedule.group_id)
+                    logging.info(msg=f"User {call.message.chat.id} get groups successful")
                 else:
                     await call.message.edit_text(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=back_kb())
                     await state.set_state(Schedule.program)
+                    logging.warning(msg=f"Groups are empty for user {call.message.chat.id}")
             else:
                 await call.message.edit_text(text=GROUPS_WILL_BE_HERE_SOON, reply_markup=back_kb())
                 await state.set_state(Schedule.program)
+                logging.warning(msg=f"Groups are empty for user {call.message.chat.id}")
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting groups for user {call.message.chat.id}: {e}")
+
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting chat_id:{call.message.chat.id} in choose group: {e}")
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.program)
 async def back_program_handler(call: CallbackQuery, state: FSMContext):
@@ -186,7 +205,7 @@ async def chosen_group(call: CallbackQuery, state: FSMContext, group_id):
             )
         await state.set_state(Schedule.schedule_type)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try choose group for user {call.message.chat.id}: {e}")
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.group_id)
 async def back_group_handler(call: CallbackQuery, state: FSMContext):
@@ -216,7 +235,7 @@ async def back_schedule_handler(call: CallbackQuery, state: FSMContext):
                 program = await state.get_value("program")
                 await chosen_program(call, state, program)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try back schedule for user {call.message.chat.id}: {e}")
 
 @group_router.callback_query(F.data == CallbackData.JOIN_CALLBACK)
 async def group_join_handler(call: CallbackQuery, state: FSMContext):
@@ -237,13 +256,14 @@ async def group_join_handler(call: CallbackQuery, state: FSMContext):
                     await state.clear()
                     return
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when user {call.message.chat.id} try to join to group_id={group_id}: {e}")
 
         await redis_client.set(name=f"joined:{call.message.chat.id}", value="true")
         await call.message.delete()
         await call.message.answer(text=YOU_JOINED_SUCCESSFUL, reply_markup=joined_kb())
+        logging.info(msg=f"User {call.message.chat.id} joined to group_id={group_id} successful")
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try join to group for user {call.message.chat.id}: {e}")
 
 @group_router.message(F.text == ButtonText.MY_GROUP)
 async def my_group_handler(msg: Message, state: FSMContext):
@@ -262,12 +282,15 @@ async def my_group_handler(msg: Message, state: FSMContext):
                     answer = group_service.get_info(response["data"])
                     await msg.answer(text=answer, reply_markup=my_group_kb())
                     await state.set_state(MyGroup.group)
+                    logging.info(msg=f"User {msg.chat.id} get group info successful")
                 else:
                     await msg.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
+                    logging.warning(msg=f"Error when try getting group info for user {msg.chat.id}")
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting group info for user {msg.chat.id}: {e}")
+
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting chat_id:{msg.chat.id} in get group info: {e}")
 
 @group_router.callback_query(F.data == CallbackData.BACK_CALLBACK, MyGroup.group)
 async def back_my_group_handler(call: CallbackQuery, state: FSMContext):
@@ -287,19 +310,21 @@ async def leave_group_handler(call: CallbackQuery, state: FSMContext):
                 if "error" not in response["data"]:
                     await call.message.delete()
                     await call.message.answer(text=YOU_LEAVED_SUCCESSFUL, reply_markup=no_joined_kb())
+                    logging.info(msg=f"User {call.message.chat.id} leave from group successful")
                 else:
                     await call.message.delete()
                     await call.message.answer(text=SOMETHING_WENT_WRONG, reply_markup=joined_kb())
+                    logging.warning(msg=f"Error when try to leaving from group for user {call.message.chat.id}")
                     return
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try to leaving from group for user {call.message.chat.id}: {e}")
 
         await redis_client.delete(f"joined:{call.message.chat.id}")
         await redis_client.delete(f"group_id:{call.message.chat.id}")
         await redis_client.delete(f"my_group_id:{call.message.chat.id}")
         await state.clear()
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try leaving from group for user {call.message.chat.id}: {e}")
 
 @group_router.message(F.text == ButtonText.ANOTHER_GROUP_SCHEDULE)
 async def another_group_schedule_handler(msg: Message, state: FSMContext):
@@ -310,4 +335,4 @@ async def another_group_schedule_handler(msg: Message, state: FSMContext):
         await state.set_state(Schedule.faculty)
         await choose_faculty_with_msg(msg, state)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting group_id:{msg.chat.id} in another group schedule: {e}")

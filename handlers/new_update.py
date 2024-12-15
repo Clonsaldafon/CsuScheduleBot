@@ -50,7 +50,7 @@ async def send_new_update_message(bot: Bot):
                                         if response["data"]["error"] == ErrorMessage.MEMBER_NOT_FOUND:
                                             joined = "false"
                     except Exception as e:
-                        logging.error(msg=f"Error with chat_id = {chat_id}: {e}")
+                        logging.error(msg=f"Error with chat_id={chat_id} when try to login: {e}")
 
             kb = joined_kb if joined == "true" else no_joined_kb
 
@@ -60,4 +60,4 @@ async def send_new_update_message(bot: Bot):
                 logging.error(msg=f"Failed to send message to {chat_id} with new update: {e}")
             await asyncio.sleep(1)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try to send new update message: {e}")

@@ -34,15 +34,18 @@ async def schedule_handler(msg: Message, state: FSMContext):
         await msg.answer(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_kb())
         await state.set_state(Schedule.schedule_type)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting group_id:{msg.chat.id} in my schedule: {e}")
 
 @schedule_router.callback_query(F.data == CallbackData.BACK_CALLBACK, Schedule.schedule_type_selected)
 async def back_schedule_type_selected(call: CallbackQuery, state: FSMContext):
-    if await redis_client.get(f"joined:{call.message.chat.id}") == "true":
-        await call.message.edit_text(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_kb())
-    else:
-        await call.message.edit_text(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_with_join_kb())
-    await state.set_state(Schedule.schedule_type)
+    try:
+        if await redis_client.get(f"joined:{call.message.chat.id}") == "true":
+            await call.message.edit_text(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_kb())
+        else:
+            await call.message.edit_text(text=CHOOSE_SCHEDULE_TYPE, reply_markup=schedule_types_with_join_kb())
+        await state.set_state(Schedule.schedule_type)
+    except Exception as e:
+        logging.error(msg=f"Redis error when try getting joined:{call.message.chat.id} in back from schedule type: {e}")
 
 @schedule_router.callback_query(F.data == CallbackData.TODAY_CALLBACK, Schedule.schedule_type)
 async def today_schedule_handler(call: CallbackQuery, state: FSMContext):
@@ -66,7 +69,7 @@ async def today_schedule_handler(call: CallbackQuery, state: FSMContext):
             await call.message.edit_text(text="".join(answer), reply_markup=back_kb())
             await state.set_state(Schedule.schedule_type_selected)
     except Exception as e:
-        logging.error(msg=f"Error: {e}")
+        logging.error(msg=f"Error when getting today schedule for user {call.message.chat.id}: {e}")
 
 @schedule_router.callback_query(F.data.in_({
     CallbackData.WEEK_CALLBACK,
@@ -85,7 +88,7 @@ async def week_schedule_handler(call: CallbackQuery, state: FSMContext):
             await call.message.edit_text(text=answer, reply_markup=back_kb())
             await state.set_state(Schedule.schedule_type_selected)
     except Exception as e:
-        logging.error(msg=f"Error: {e}")
+        logging.error(msg=f"Error when getting week schedule for user {call.message.chat.id}: {e}")
 
 async def get_schedule(chat_id: int, is_even: bool):
     try:
@@ -95,10 +98,10 @@ async def get_schedule(chat_id: int, is_even: bool):
         try:
             return await schedule_service.get_schedule(token=token, group_id=group_id, is_even=is_even)
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try to get schedule for user {chat_id}: {e}")
             return dict()
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try to get schedule for user {chat_id}: {e}")
         return dict()
 
 async def is_successful(response, call: CallbackQuery):

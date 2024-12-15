@@ -27,7 +27,7 @@ async def start_handler(msg: Message):
 
         await redis_client.set(name=f"started_at:{msg.chat.id}", value=str(datetime.now()))
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try set started date for user {msg.chat.id}: {e}")
 
 @auth_router.callback_query(F.data == CallbackData.FEEDBACK_LATER_CALLBACK)
 async def feedback_rejection_handler(call: CallbackQuery):
@@ -36,4 +36,7 @@ async def feedback_rejection_handler(call: CallbackQuery):
 
         await call.message.answer(text=FEEDBACK_LATER)
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(
+            msg=f"Redis error when try set started date after click on remind later "\
+                f"for user {call.message.chat.id}: {e}"
+        )

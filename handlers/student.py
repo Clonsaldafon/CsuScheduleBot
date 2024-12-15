@@ -56,9 +56,9 @@ async def notifications_handler(msg: Message, state: FSMContext):
                     await msg.answer(text=answer, reply_markup=notifications_kb(is_notifications_enabled))
                     await state.set_state(StudentProfile.notifications)
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(msg=f"Error when try getting who {msg.chat.id}: {e}")
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(msg=f"Redis error when try getting info for user {msg.chat.id} in notifications: {e}")
 
 @student_router.callback_query(F.data == CallbackData.BACK_CALLBACK, StudentProfile.notifications)
 async def back_notifications_handler(call: CallbackQuery, state: FSMContext):
@@ -109,9 +109,15 @@ async def notifications_enabling(call: CallbackQuery, state: FSMContext):
                         await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
                         await state.clear()
             except Exception as e:
-                logging.error(msg=f"Error: {e}")
+                logging.error(
+                    msg=f"Error when try updating notifications enabling "\
+                    f"for user {call.message.chat.id}: {e}"
+                )
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(
+            msg=f"Redis error when try getting info for user {call.message.chat.id} "\
+                f"in notifications enabling: {e}"
+        )
 
 @student_router.callback_query(F.data == CallbackData.NOTIFICATIONS_DELAY_CALLBACK)
 async def edit_notification_delay_handler(call: CallbackQuery, state: FSMContext):
@@ -154,6 +160,12 @@ async def capture_edit_notification_delay(call: CallbackQuery, state: FSMContext
                     await call.message.answer(text=DATA_UPDATED_SUCCESSFUL, reply_markup=kb())
                     await state.clear()
         except Exception as e:
-            logging.error(msg=f"Error: {e}")
+            logging.error(
+                msg=f"Error when try updating notifications delay " \
+                    f"for user {call.message.chat.id}: {e}"
+            )
     except Exception as e:
-        logging.error(msg=f"Redis error: {e}")
+        logging.error(
+            msg=f"Redis error when try getting info for user {call.message.chat.id} " \
+                f"in notifications delay: {e}"
+        )

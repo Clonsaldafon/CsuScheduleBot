@@ -55,7 +55,7 @@ async def main():
         asyncio.create_task(delete_webhook(bot)),
         asyncio.create_task(start_polling(bot, dp)),
         asyncio.create_task(survey_check_loop(bot)),
-        asyncio.create_task(send_new_update_message(bot))
+        # asyncio.create_task(send_new_update_message(bot))
     ]
 
     try:
